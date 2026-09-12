@@ -1,4 +1,5 @@
-const storedApiUrl = localStorage.getItem('titan.apiUrl') || '';
+const deployedApiUrl = 'https://script.google.com/macros/s/AKfycbxvY4vxJKj32-9Up0mlkLl5Fa_XK6eaMSuFykFRooS9HA-URta9D8GUJgsb8SjLVlVnXQ/exec';
+const storedApiUrl = localStorage.getItem('titan.apiUrl') || deployedApiUrl;
 
 export const Config = Object.freeze({
   apiUrl: storedApiUrl,
