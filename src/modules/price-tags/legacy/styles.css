@@ -1,0 +1,188 @@
+@font-face{font-family:Montserrat;src:url('assets/Montserrat-Variable.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
+@font-face{font-family:Inter;src:url('assets/Inter-Variable.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
+:root{--red:#e5162d;--ink:#101010;--muted:#777;--panel:#fff;--bg:#e8e8e8}
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;font-family:Inter,Arial,sans-serif;color:var(--ink);background:var(--bg)}svg{width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.topbar{height:64px;background:#111;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:relative;z-index:5}.app-brand{display:flex;align-items:center;gap:11px}.app-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--red);font-size:23px;font-weight:900}.app-brand strong,.app-brand small{display:block}.app-brand strong{font-size:14px;letter-spacing:.16em}.app-brand small{font-size:8px;letter-spacing:.16em;color:#999;margin-top:3px}.top-actions{display:flex;gap:8px}.btn{border:0;border-radius:9px;padding:11px 15px;font:700 12px Inter,Arial;display:inline-flex;align-items:center;gap:7px;cursor:pointer}.btn-dark{background:#292929;color:#fff}.btn-red,.dialog-actions .btn-red{background:var(--red);color:#fff;border:0}
+.app-shell{height:calc(100% - 64px);display:grid;grid-template-columns:minmax(390px,510px) minmax(0,1fr);overflow:hidden}.editor{height:100%;overflow-y:scroll;overflow-x:hidden;scrollbar-gutter:stable;overscroll-behavior:contain;padding:24px 24px 50px;background:#f7f7f7;border-right:1px solid #d3d3d3}.editor-title{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px}.editor-title>div>span{font-size:9px;font-weight:900;letter-spacing:.15em;color:var(--red)}.editor-title h1{font-size:27px;margin:4px 0 0}.editor-title>small{font-size:9px;color:#2a9b60}.panel{background:#fff;border:1px solid #e0e0e0;border-radius:15px;padding:19px;margin-bottom:13px;box-shadow:0 2px 8px rgba(0,0,0,.025)}.panel h2{font-size:14px;margin:0 0 16px}.fields{display:grid;gap:13px}.fields.two{grid-template-columns:1fr 1fr}.wide{grid-column:span 2}.field{display:grid;gap:6px;min-width:0}.field>span:first-child{font-size:9px;font-weight:800;color:#626262}.field input,.field select,.payment-options input[type=text],#customPayment{width:100%;height:43px;border:1px solid #d6d6d6;border-radius:9px;background:#fafafa;padding:0 12px;font:600 13px Inter,Arial;outline:none}.field input:focus,.field select:focus,#customPayment:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,22,45,.08);background:#fff}.price-input{font-size:18px!important;font-weight:900!important}.field em{font-size:9px;color:#888;font-style:normal}.custom-slot{display:block;height:43px}.custom-slot input{opacity:0;pointer-events:none}.custom-slot.open input{opacity:1;pointer-events:auto}.setting-row{min-height:48px;border-top:1px solid #eee;padding-top:13px;display:flex;align-items:center;justify-content:space-between;gap:14px}.setting-row.no-line{border:0;padding:0}.setting-row strong,.setting-row small{display:block}.setting-row strong{font-size:12px}.setting-row small{font-size:9px;color:#888;margin-top:3px}.switch input{position:absolute;opacity:0}.switch i{display:block;width:40px;height:23px;border-radius:99px;background:#c7c7c7;position:relative}.switch i:after{content:"";position:absolute;width:17px;height:17px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #777}.switch input:checked+i{background:var(--red)}.switch input:checked+i:after{left:20px}.controlled{opacity:1}.controlled.control-off{opacity:.38}.payment-options{min-height:122px;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:#f6f6f6;border-radius:10px}.payment-options label{font-size:10px;font-weight:700;display:flex;gap:6px;align-items:center}.payment-options input[type=checkbox]{accent-color:var(--red)}.wide-slot{grid-column:span 2}.qr-editor{min-height:105px;display:grid;gap:9px}.upload{height:42px;border:1px dashed #bbb;border-radius:9px;display:grid;place-items:center;font-size:10px;font-weight:800;color:#555;cursor:pointer}.upload input{position:absolute;opacity:0;pointer-events:none}.manage-btn{height:42px;border:1px solid #ddd;border-radius:9px;background:#fafafa;font-weight:800;cursor:pointer}
+.preview-pane{height:100%;min-width:0;overflow:hidden;display:grid;grid-template-rows:28px minmax(0,1fr) 22px;place-items:center;padding:12px 16px 10px}.preview-head{width:min(100%,720px);display:flex;align-items:center;justify-content:space-between;color:#666;font-size:10px}.preview-head span{font-weight:900;letter-spacing:.09em;color:#555}.preview-head span::first-letter{color:var(--red)}.paper-frame{position:relative;width:516px;height:730px}.price-card{--accent:var(--red);width:794px;height:1123px;position:absolute;left:0;top:0;overflow:hidden;background:#fff;box-shadow:0 18px 60px rgba(0,0,0,.15);transform:scale(.65);transform-origin:top left;color:#0c0c0c}.price-card.mono{--accent:#090909;filter:grayscale(1)}.price-card *{box-sizing:border-box}.rule{position:absolute;left:50px;width:694px;height:1px;background:rgba(0,0,0,.2)}.rule-one{top:160px}.rule-two{top:650px}.rule-three{top:1015px}.print-logo{position:absolute;left:50px;top:30px;width:155px;height:122px;object-fit:contain}.stock-block{position:absolute;right:175px;top:58px;text-align:right;width:150px}.stock-block small,.stock-block strong{display:block}.stock-block small{font-size:10px;color:#777;font-weight:900;letter-spacing:.12em}.stock-block strong{font-size:25px;letter-spacing:.08em;margin-top:5px}.qr-block{position:absolute;right:50px;top:25px;width:104px;text-align:center}.qr-block #qrCode canvas,.qr-block #qrCode img{width:96px!important;height:96px!important;display:block}.qr-block>strong{display:block;color:var(--accent);font-size:10px;letter-spacing:.12em;margin-top:4px}.sale-badge{position:absolute;right:50px;top:178px;height:34px;padding:0 16px;background:var(--accent);color:#fff;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;letter-spacing:.06em}.sale-badge svg{width:17px}.watermark{position:absolute;left:-40px;top:480px;width:874px;text-align:center;transform:rotate(-18deg);font:900 92px/.9 Montserrat,Arial;color:var(--accent);opacity:.12;z-index:3;white-space:nowrap;pointer-events:none}.model-block{position:absolute;left:50px;right:50px;top:205px;height:105px}.model-block h2{margin:0;font:900 64px/.9 Montserrat,Arial;text-transform:uppercase;letter-spacing:-.045em;white-space:nowrap}.model-block p{margin:13px 0 0;font-size:18px;font-weight:700;color:#555}.spec{position:absolute;width:310px;height:76px;display:grid;grid-template-columns:42px 1fr;align-items:center;gap:13px}.spec>svg{width:34px;height:34px;color:var(--accent);stroke-width:1.7}.spec strong,.spec small{display:block}.spec strong{font-size:22px;line-height:1;font-weight:900;white-space:nowrap}.spec strong b{font-weight:500;color:#999}.spec small{font-size:9px;line-height:1;margin-top:8px;color:#777;font-weight:900;letter-spacing:.1em}.spec-1{left:50px;top:335px}.spec-2{left:410px;top:335px}.spec-3{left:50px;top:435px}.spec-4{left:410px;top:435px}.spec-5{left:50px;top:535px}.spec-6{left:410px;top:535px}.benefits-block{position:absolute;left:50px;right:50px;top:675px;height:42px;display:flex;align-items:center;gap:10px}.benefits-block span{border-left:5px solid var(--accent);background:#f1f1f1;padding:8px 12px;font-size:12px;font-weight:900}.payment-block{position:absolute;left:50px;right:50px;top:730px;height:35px;font-size:14px;font-weight:800;color:#444;display:flex;align-items:center}.price-block{position:absolute;left:100px;right:50px;top:790px;height:150px;background:var(--accent);color:#fff;padding:20px 30px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center}.price-block del{position:absolute;right:31px;top:17px;font-size:27px;font-weight:800;line-height:1;opacity:.82}.price-block>div{display:flex;align-items:center;margin-top:20px}.price-block>div>strong{font:900 65px/.9 Montserrat,Arial;letter-spacing:-.045em;white-space:nowrap}.price-block>div>svg{width:42px;height:42px;margin-left:10px;stroke-width:2.3}.contact-block{position:absolute;left:50px;right:50px;top:962px;height:46px;display:flex;align-items:center;gap:9px;white-space:nowrap}.contact-block>span{color:var(--accent);font-size:11px;font-weight:900;letter-spacing:.09em}.contact-block svg{width:22px;height:22px;color:var(--accent)}.contact-block .arrow{width:18px}.contact-block>strong{font-size:21px;font-weight:900}.contact-block>strong b{font-weight:900}.footer-brand{position:absolute;right:50px;top:1050px;text-align:right;font:900 17px/1 Montserrat,Arial;letter-spacing:.13em}.footer-brand small{display:block;margin-top:6px;color:var(--accent);font:900 7px/1 Inter,Arial;letter-spacing:.1em}.price-card.hide-labels .spec small{opacity:0}.price-card.hide-discount .price-block del{opacity:0}.price-card.hide-sale .sale-badge{opacity:0}.price-card.hide-status .watermark{opacity:0}.price-card.hide-benefits .benefits-block{opacity:0}.price-card.hide-payment .payment-block{opacity:0}.price-card.hide-stock .stock-block{opacity:0}.price-card.hide-qr .qr-block{opacity:0}.price-card.hide-trim .model-block p{opacity:0}.print-note{margin:0;font-size:9px;color:#777}
+dialog{width:min(620px,calc(100% - 30px));padding:0;border:0;border-radius:18px;box-shadow:0 30px 100px rgba(0,0,0,.35)}dialog::backdrop{background:rgba(0,0,0,.55)}.dialog-card{padding:24px}.dialog-head{display:flex;justify-content:space-between;align-items:flex-start}.dialog-head span{font-size:9px;font-weight:900;color:var(--red);letter-spacing:.15em}.dialog-head h2{font-size:22px;margin:5px 0 18px}.dialog-head button{width:34px;height:34px;border:0;border-radius:50%;background:#eee;font-size:22px}.manager-list{display:grid;gap:8px;max-height:52vh;overflow:auto}.manager-edit{display:grid;grid-template-columns:1fr 1.4fr 34px;gap:8px}.manager-edit input{height:40px;border:1px solid #ddd;border-radius:8px;padding:0 10px;font:600 12px Inter,Arial}.manager-edit button{border:0;border-radius:8px;background:#f6e5e8;color:var(--red)}.add-manager{width:100%;height:40px;margin-top:10px;border:0;border-radius:8px;background:#f2f2f2;font-weight:800}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #eee;margin-top:18px;padding-top:18px}.dialog-actions button{border:0;border-radius:8px;padding:10px 15px;font-weight:800}
+@media(max-width:900px){html,body{height:auto;min-height:100%;overflow:auto}.app-shell{height:auto;display:block;overflow:visible}.editor{height:auto;overflow:visible;padding:18px}.preview-pane{height:auto;min-height:760px;padding:18px 8px 30px;grid-template-rows:28px auto 25px}.paper-frame{margin:12px 0}}
+@media(max-width:520px){.topbar{height:60px;padding:0 12px}.app-brand small,.btn-dark{display:none}.editor{padding:12px}.fields.two{grid-template-columns:1fr}.wide{grid-column:auto}.panel{padding:16px}.payment-options{grid-template-columns:1fr}.wide-slot{grid-column:auto}.manager-edit{grid-template-columns:1fr 1fr 30px}}
+@media print{html,body{width:210mm;height:297mm;margin:0!important;overflow:visible!important;background:#fff!important}.topbar,.editor,.preview-head,.print-note{display:none!important}.app-shell,.preview-pane,.paper-frame{display:block!important;width:210mm!important;height:297mm!important;margin:0!important;padding:0!important;background:#fff!important}.price-card{width:210mm!important;height:297mm!important;transform:none!important;box-shadow:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}@page{size:A4 portrait;margin:0}}
+@media screen{.paper-frame{width:437px;height:618px}.price-card{transform:scale(.55)}}
+@media screen and (min-width:901px) and (min-height:800px){.paper-frame{width:476px;height:674px}.price-card{transform:scale(.6)}}
+@media screen and (min-width:901px) and (min-height:900px){.paper-frame{width:516px;height:730px}.price-card{transform:scale(.65)}}
+@media screen and (min-width:901px) and (min-height:1050px){.paper-frame{width:596px;height:843px}.price-card{transform:scale(.75)}}
+@media screen and (min-width:901px) and (max-width:1100px){.paper-frame{width:381px;height:539px}.price-card{transform:scale(.48)}}
+@media screen and (max-width:900px){.paper-frame{width:397px;height:562px}.price-card{transform:scale(.5)}}
+@media screen and (max-width:520px){.paper-frame{width:318px;height:449px}.price-card{transform:scale(.4)}}
+.price-card.mono{filter:none}.price-card.mono .print-logo{filter:grayscale(1)}
+.price-card.hide-labels .spec small,.price-card.hide-discount .price-block del,.price-card.hide-sale .sale-badge,.price-card.hide-status .watermark,.price-card.hide-benefits .benefits-block,.price-card.hide-payment .payment-block,.price-card.hide-stock .stock-block,.price-card.hide-qr .qr-block,.price-card.hide-trim .model-block p{visibility:hidden;opacity:initial}
+.price-card.hide-status .watermark{opacity:.12}
+@media screen{.price-card{transform:none!important;zoom:.55}}
+@media screen and (min-width:901px) and (min-height:800px){.price-card{zoom:.6}}
+@media screen and (min-width:901px) and (min-height:900px){.price-card{zoom:.65}}
+@media screen and (min-width:901px) and (min-height:1050px){.price-card{zoom:.75}}
+@media screen and (min-width:901px) and (max-width:1100px){.price-card{zoom:.48}}
+@media screen and (max-width:900px){.price-card{zoom:.5}}
+@media screen and (max-width:520px){.price-card{zoom:.4}}
+@media print{.price-card{zoom:1!important}}
+.switch{position:relative;display:block;width:40px;height:23px;flex:0 0 40px}.switch input{position:absolute!important;inset:0!important;width:40px!important;height:23px!important;margin:0!important;opacity:0!important;cursor:pointer;z-index:2}.switch i{position:absolute;inset:0}
+@media screen and (min-width:901px){html,body{overflow:clip!important;overscroll-behavior:none}body{position:fixed;inset:0;width:100%}}
+@media screen and (max-width:900px){body{position:static}}
+
+/* Печатная композиция V7 — перенесена из утверждённого макета Figma. */
+.print-logo{left:50px;top:31px;width:245px;height:108px;display:flex;align-items:center;gap:14px;object-fit:initial}
+.print-logo>img{width:88px;height:52px;object-fit:contain}
+.print-logo>span,.print-logo strong,.print-logo small{display:block}
+.print-logo strong{font:900 23px/1 Montserrat,Arial;letter-spacing:.04em;white-space:nowrap}
+.print-logo small{margin-top:8px;color:var(--accent);font-size:7px;font-weight:900;letter-spacing:.1em;white-space:nowrap}
+.stock-block{right:174px;top:55px;text-align:left;width:170px}
+.stock-block strong{font-size:27px}
+.qr-block{top:24px}
+.qr-block #qrCode canvas,.qr-block #qrCode img{width:98px!important;height:98px!important;margin:auto}
+.sale-badge{right:50px;top:258px;width:204px;justify-content:center;background:#101010}
+.sale-badge svg{display:none}
+.watermark{top:485px;transform:rotate(-14deg);font-size:76px;opacity:.085}
+.model-block{top:194px;height:115px}
+.model-block h2{font-size:62px;line-height:.95;letter-spacing:-.04em}
+.spec{width:320px;grid-template-columns:36px 1fr;gap:14px}
+.spec>svg{width:32px;height:32px;stroke-width:1.8}
+.spec small{margin-top:9px;letter-spacing:.08em}
+.spec-3,.spec-4{top:437px}
+.spec-5,.spec-6{top:539px}
+.benefits-block{top:674px;height:40px;gap:34px}
+.benefits-block span{position:relative;border:0;background:transparent;padding:0 0 0 29px;font-size:13px;white-space:nowrap}
+.benefits-block span:before{content:'✓';position:absolute;left:0;top:-2px;width:20px;height:20px;border:2px solid var(--accent);border-radius:50%;display:grid;place-items:center;color:var(--accent);font-size:11px}
+.benefits-block span:nth-child(n+3){display:none}
+.payment-block{top:725px;height:40px;padding:0 14px;background:#f4f4f4;font-size:12px;font-weight:900;word-spacing:8px}
+.price-block{left:50px;right:50px;top:792px;height:164px;padding:20px 35px}
+.price-block del{right:36px;top:24px;font-size:24px;opacity:.72}
+.price-block>div{margin-top:26px}
+.contact-block{top:978px;height:42px}
+.contact-block>span{font-size:10px;letter-spacing:.08em}
+.footer-brand{top:1057px;font-size:14px;letter-spacing:.12em}
+.price-card.mono .print-logo{filter:none}
+.price-card.mono .print-logo>img{filter:grayscale(1)}
+
+/* Печатная композиция V8 — точное расположение по макету 17:171. */
+.rule{left:50px;width:694px;background:rgba(16,16,16,.16)}
+.rule-one{top:265px}
+.rule-two{top:523px}
+.rule-three{top:650px}
+.print-logo{left:auto;right:48px;top:24px;width:190px;height:190px;display:block;object-fit:contain}
+.stock-block{left:50px;right:auto;top:978px;width:190px;text-align:left}
+.stock-block small{font-size:8px;letter-spacing:.12em}
+.stock-block strong{font-size:25px;line-height:1;margin-top:2px;letter-spacing:.06em}
+.qr-block{left:auto;right:50px;top:975px;width:104px;height:112px;text-align:right;display:flex;align-items:center;justify-content:flex-end}
+.qr-block #qrCode{width:96px;height:96px}
+.qr-block #qrCode canvas,.qr-block #qrCode img{width:96px!important;height:96px!important;margin:0}
+.qr-block>strong{position:absolute;right:100px;top:42px;width:65px;margin:0;transform:rotate(-90deg);transform-origin:center;color:var(--accent);font-size:8px;letter-spacing:.08em;white-space:nowrap}
+.sale-badge{left:50px;right:auto;top:0;width:160px;height:34px;background:var(--accent);font-size:10px}
+.watermark{left:27px;top:451px;width:720px;transform:rotate(-28deg) scaleX(.97);font-size:76px;opacity:.085}
+.model-block{left:50px;right:310px;top:88px;height:150px}
+.model-block h2{font-size:55px;line-height:.98;letter-spacing:-.035em;white-space:normal;max-width:440px}
+.model-block p{margin-top:10px;font-size:18px;color:#666}
+.spec{width:310px;height:65px;grid-template-columns:34px 1fr;gap:13px}
+.spec>svg{width:29px;height:29px}
+.spec strong{font-size:22px}
+.spec small{font-size:8px;margin-top:6px}
+.spec-1{left:50px;top:287px}
+.spec-2{left:405px;top:287px}
+.spec-3{left:50px;top:369px}
+.spec-4{left:405px;top:369px}
+.spec-5{left:50px;top:451px}
+.spec-6{left:405px;top:451px}
+.benefits-block{left:50px;right:50px;top:537px;height:42px;gap:0}
+.benefits-block span{display:none!important}
+.benefits-block span:first-child{display:block!important;padding-left:30px;font-size:13px;background:transparent}
+.benefits-block span:first-child:before{top:-3px;width:20px;height:20px}
+.payment-block{left:232px;right:50px;top:662px;height:37px;padding:0;background:transparent;display:flex;justify-content:flex-end;align-items:stretch;gap:9px;font-size:0;word-spacing:normal;color:inherit}
+.payment-block>span{min-width:112px;height:37px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:8px;background:#f5f5f5;color:#222;font-size:10px;font-weight:900;white-space:nowrap}
+.payment-block>span:before{content:'✓';width:17px;height:17px;border:2px solid var(--accent);border-radius:50%;display:grid;place-items:center;color:var(--accent);font-size:9px;line-height:1}
+.price-block{left:50px;right:50px;top:710px;height:162px;padding:18px 35px;align-items:center;justify-content:center}
+.price-block del{right:43px;top:17px;font-size:23px}
+.price-block>div{width:100%;justify-content:center;margin-top:19px}
+.price-block>div>strong{font-size:76px;letter-spacing:-.035em}
+.price-block>div>svg{display:none}
+.price-block>div:after{content:'₽';margin-left:25px;font:900 70px/.9 Montserrat,Arial;color:#fff}
+.contact-block{left:50px;right:50px;top:888px;height:66px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;border-bottom:1px solid rgba(16,16,16,.16)}
+.contact-block>span{order:1;font-size:12px;letter-spacing:0}
+.contact-block>strong{order:2;font-size:23px;text-transform:uppercase}
+.contact-block>strong i:before{content:'|';font-style:normal;padding:0 8px}
+.contact-block>svg{display:none}
+.footer-brand{left:50px;right:190px;top:1025px;text-align:left;font:700 9px/1.25 Inter,Arial;letter-spacing:0;color:#555}
+.footer-brand>b,.footer-brand small{display:block;margin:0 0 3px;color:#555;font:700 9px/1.25 Inter,Arial;letter-spacing:0}
+.price-card.mono .print-logo{filter:grayscale(1)}
+
+/* Печатная композиция V9 — размеры и координаты сняты напрямую из Цветной.svg (794×1123). */
+.rule{left:47px;background:rgba(16,16,16,.16)}
+.rule-one{top:259px;width:691px}
+.rule-two{top:521px;width:694px}
+.rule-three{top:651px;width:691px}
+.print-logo{left:533px;right:auto;top:24px;width:205px;height:205px;object-fit:contain}
+.sale-badge{left:47px;top:0;width:161px;height:31px;padding:0;justify-content:center;font-size:9px;line-height:1}
+.model-block{left:50px;right:auto;top:88px;width:410px;height:151px}
+.model-block h2{width:410px;margin:0;font:900 52px/1.215 Montserrat,Arial,sans-serif;letter-spacing:-.04em;white-space:normal}
+.model-block h2>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.model-block p{position:absolute;left:0;top:116px;margin:0;font:600 18px/1.2 Inter,Arial,sans-serif;color:#616161}
+.spec{width:315px;height:42px;grid-template-columns:35px 1fr;gap:13px;align-items:start}
+.spec>svg{width:28px;height:28px;margin-top:1px;stroke-width:1.7}
+.spec strong{font:800 22px/1 Inter,Arial,sans-serif;transform:scaleX(1.08);transform-origin:left center}
+.spec small{margin-top:6px;font:700 8px/1 Inter,Arial,sans-serif;letter-spacing:.08em;color:#616161}
+.spec-1{left:50px;top:287px}.spec-2{left:410px;top:287px}
+.spec-3{left:50px;top:368px}.spec-4{left:410px;top:368px}
+.spec-5{left:50px;top:449px}.spec-6{left:410px;top:449px}
+.benefits-block{left:47px;right:47px;top:545px;height:20px;align-items:start}
+.benefits-block span:first-child{padding:0 0 0 31px;font:700 15.6px/18px Inter,Arial,sans-serif}
+.benefits-block span:first-child:before{left:1px;top:1px;width:18px;height:18px;border-width:2px;font-size:10px}
+.payment-block{left:230px;right:auto;top:662px;width:508px;height:38px;display:grid;grid-template-columns:132px 112px 126px 102px;gap:12px;align-items:stretch;justify-content:start}
+.payment-block>span{min-width:0;width:100%;height:38px;padding:0 10px;gap:8px;background:#f7f7f7;font-size:10px}
+.payment-block>span:before{flex:0 0 18px;width:18px;height:18px}
+.payment-block>span:nth-child(n+5){display:none}
+.price-block{left:47px;right:auto;top:711px;width:694px;height:164px;padding:18px 35px}
+.price-block del{right:46px;top:16px;font:700 23px/1 Montserrat,Arial,sans-serif;transform:scaleX(1.13);transform-origin:right center}
+.price-block>div{margin-top:0}
+.price-block>div{transform:translateX(6px) scaleX(1.13)}
+.price-block>div>strong{font:900 86px/.9 Montserrat,Arial,sans-serif;letter-spacing:-.045em;transform:none}
+.price-block>div:after{margin-left:24px;font:900 78px/.9 Montserrat,Arial,sans-serif;transform:none}
+.contact-block{left:47px;right:53px;top:891px;height:75px;padding:0;justify-content:flex-start;border-bottom:1px solid rgba(16,16,16,.16)}
+.contact-block>span{font:800 12px/1 Inter,Arial,sans-serif;transform:scaleX(1.32);transform-origin:right center}
+.contact-block>strong{font:800 23px/1.1 Inter,Arial,sans-serif;transform:scaleX(1.21);transform-origin:right center}
+.stock-block{left:47px;top:983px;width:190px}
+.stock-block small{font:700 8px/1 Inter,Arial,sans-serif;color:#737373}
+.stock-block strong{margin-top:3px;font:800 25px/1 Inter,Arial,sans-serif}
+.qr-block{left:641px;right:auto;top:983px;width:100px;height:100px}
+.qr-block #qrCode{width:100px;height:100px}
+.qr-block #qrCode canvas,.qr-block #qrCode img{width:100px!important;height:100px!important}
+.qr-block>strong{right:100px;top:42px;width:64px;font-size:8px}
+.footer-brand{left:47px;right:auto;top:1033px;width:360px;font:600 9px/1.25 Inter,Arial,sans-serif;color:#616161}
+.footer-brand>b,.footer-brand small{font:600 9px/1.25 Inter,Arial,sans-serif;color:#616161}
+
+/* V11 — навигация и локальная библиотека сохранённых ценников. */
+.workspace-tabs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;padding:4px;background:#252525;border-radius:10px}.workspace-tab{height:34px;padding:0 14px;border:0;border-radius:7px;background:transparent;color:#aaa;font:700 11px Inter,Arial;cursor:pointer;white-space:nowrap}.workspace-tab.active{background:#fff;color:#111}.workspace-tab span{display:inline-grid;min-width:18px;height:18px;margin-left:5px;padding:0 5px;place-items:center;border-radius:99px;background:#3a3a3a;color:#fff;font-size:9px}.workspace-tab.active span{background:var(--red)}.btn-light{background:#fff;color:#111;border:1px solid #ddd}.view-panel[hidden],.saved-empty[hidden],.saved-grid[hidden]{display:none!important}
+.library-view{height:calc(100% - 64px);overflow:auto;background:#f3f3f3;padding:34px}.library-shell{width:min(1180px,100%);margin:0 auto}.library-head{display:flex;align-items:flex-start;justify-content:space-between;gap:30px;margin-bottom:20px}.library-head>div:first-child>span{font-size:9px;font-weight:900;letter-spacing:.15em;color:var(--red)}.library-head h1{margin:5px 0 7px;font-size:32px}.library-head p{margin:0;color:#777;font-size:12px}.library-tools{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.library-note{margin-bottom:22px;padding:13px 16px;border:1px solid #dedede;border-radius:10px;background:#fff;color:#666;font-size:11px}.library-note strong{color:#222}.library-note code{font-weight:800;color:var(--red)}.saved-empty{min-height:260px;border:1px dashed #c7c7c7;border-radius:16px;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#888}.saved-empty strong{font-size:18px;color:#333;margin-bottom:7px}.saved-empty span{font-size:11px}.saved-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.saved-card{min-width:0;border:1px solid #ddd;border-radius:15px;background:#fff;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,.04)}.saved-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.saved-card-badge{display:inline-flex;max-width:160px;padding:5px 8px;background:#fce8eb;color:var(--red);font-size:8px;font-weight:900;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.saved-card-stock{font-size:9px;font-weight:800;color:#888;white-space:nowrap}.saved-card h2{min-height:48px;margin:14px 0 5px;font:900 22px/1.08 Montserrat,Arial;text-transform:uppercase}.saved-card-trim{height:18px;margin:0;color:#777;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.saved-card-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:15px 0;padding:13px 0;border-top:1px solid #eee;border-bottom:1px solid #eee}.saved-card-facts span{font-size:9px;color:#888}.saved-card-facts strong{display:block;margin-top:3px;color:#111;font-size:13px}.saved-card-price{font:900 24px/1 Montserrat,Arial;color:var(--red)}.saved-card-meta{display:flex;justify-content:space-between;gap:8px;margin-top:12px;color:#888;font-size:9px}.saved-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:15px}.saved-card-actions button{height:36px;border:1px solid #ddd;border-radius:8px;background:#fafafa;font:800 10px Inter,Arial;cursor:pointer}.saved-card-actions .primary{grid-column:span 2;background:#111;color:#fff;border-color:#111}.saved-card-actions .danger{color:var(--red);background:#fff5f6;border-color:#f1ced3}
+@media(max-width:900px){.topbar{gap:10px;padding:0 14px}.workspace-tabs{position:static;transform:none}.app-brand>span:last-child{display:none}.library-view{height:auto;min-height:calc(100vh - 64px);padding:24px 18px}.library-head{display:block}.library-tools{justify-content:flex-start;margin-top:18px}.saved-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.topbar{padding:0 8px}.app-brand{display:none}.workspace-tab{padding:0 9px}.top-actions .btn{padding:10px}.library-view{min-height:calc(100vh - 60px);padding:18px 12px}.library-head h1{font-size:27px}.library-tools .btn{flex:1;justify-content:center}.saved-grid{grid-template-columns:1fr}}
+@media print{.library-view{display:none!important}}
+
+/* Итоговые иконки проекта из папки icons. */
+.spec>.spec-icon{width:28px;height:28px;margin-top:1px;object-fit:contain;filter:invert(16%) sepia(97%) saturate(4422%) hue-rotate(344deg) brightness(91%) contrast(98%)}
+.content-icon{display:block;flex:0 0 auto;width:18px;height:18px;object-fit:contain}
+.benefits-block span:first-child{display:flex!important;align-items:center;gap:12px;padding-left:0}
+.benefits-block span:first-child:before,.payment-block>span:before{content:none}
+.benefits-block .content-icon{width:18px;height:18px;filter:invert(16%) sepia(97%) saturate(4422%) hue-rotate(344deg) brightness(91%) contrast(98%)}
+.payment-block>span{gap:8px}
+.payment-block .content-icon{width:18px;height:18px}
+.price-card.mono .spec-icon,.price-card.mono .content-icon{filter:grayscale(1)}
+
+/* Многострочный ввод и перенос до трёх преимуществ в печатном макете. */
+.field textarea{width:100%;min-height:74px;border:1px solid #d6d6d6;border-radius:9px;background:#fafafa;padding:11px 12px;font:600 13px/1.35 Inter,Arial;outline:none;resize:vertical}
+.field textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,22,45,.08);background:#fff}
+.benefits-block{top:536px;height:108px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:5px;overflow:hidden}
+.benefits-block span,.benefits-block span:first-child{display:flex!important;width:100%;min-width:0;align-items:flex-start;gap:12px;padding:0!important;font:700 13px/16px Inter,Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left}
+.benefits-block span:nth-child(n+4){display:none!important}
+.benefits-block .content-icon{flex:0 0 18px;margin-top:0}
+
+/* Чуть более заметные плашки способов оплаты для чёрно-белой печати. */
+.payment-block>span{background:#e8e8e8;border:1px solid #d4d4d4}

@@ -140,8 +140,22 @@ async function vehicleView(id) {
   const metrics = [['Цена продавца',v.seller_price],['Рыночная',v.market_price],['Выкуп',v.buyout_price],['Цена продажи',v.sale_price],['Вложения',v.estimated_investments],['Комиссия',v.commission]].map(([k,val]) => `<div class="metric"><span class="muted">${k}</span><strong>${fmtMoney(val)}</strong></div>`).join('');
   const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(v.status)}</span><span class="muted">${h(v.public_status || 'private')}</span></div><h2 style="margin-top:22px">${h(title)}</h2><p class="muted">${h([v.year, v.engine_volume, v.transmission, v.mileage ? `${Number(v.mileage).toLocaleString('ru-RU')} км` : ''].filter(Boolean).join(' · '))}</p><div class="grid stats">${metrics}</div></section><section class="card"><h2>Контакт</h2><p><b>${h(v.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(v.seller_phone || 'Телефон не указан')}</span></p><p class="muted">${h(v.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(v.seller_phone)}">Позвонить</a><button class="btn" data-action="new-contact">Новый контакт</button><button class="btn" data-action="new-valuation">Оценить</button></div></section></div>
   <div class="grid two" style="margin-top:18px"><section class="card"><h2>История контактов</h2>${timeline((data.contacts||[]).map(x=>({...x,title:x.result||x.type,next_action_at:x.created_at})))}</section><section class="card"><h2>Оценки</h2>${(data.valuations||[]).length ? timeline(data.valuations.map(x=>({title:`Рынок ${fmtMoney(x.market_price)} · Выкуп ${fmtMoney(x.buyout_price)}`,due_at:x.created_at}))) : '<div class="empty">Оценок пока нет</div>'}</section><section class="card"><h2>Файлы</h2>${fileList(data.files)}</section><section class="card"><h2>История изменений</h2>${(data.audit||[]).length ? timeline(data.audit.map(x=>({title:`${x.field}: ${x.old_value||'—'} → ${x.new_value||'—'}`,due_at:x.created_at}))) : '<div class="empty">Изменений пока нет</div>'}</section></div>`;
-  const actions = '<button class="btn" data-action="edit-vehicle">Изменить</button><button class="btn" data-action="upload-file">Загрузить файл</button><button class="btn primary" data-action="mark-sold">Продано</button>';
+  const actions = '<button class="btn" data-action="edit-vehicle">Изменить</button><button class="btn" data-action="open-price-tag">Ценник</button><button class="btn" data-action="upload-file">Загрузить файл</button><button class="btn primary" data-action="mark-sold">Продано</button>';
   root.innerHTML = shell(page(v.vehicle_id, title, body, actions));
+}
+
+async function priceTagsView() {
+  const vehicle = AppState.get('currentVehicle');
+  if (!vehicle) {
+    const rows = await TitanAPI.vehicles.list();
+    const picker = rows.length ? `<div class="tool-picker">${rows.map(v => `<button class="card tool-choice" data-price-tag-vehicle="${h(v.vehicle_id)}"><span class="eyebrow">${h(v.vehicle_id)}</span><strong>${h([v.brand,v.model,v.year].filter(Boolean).join(' '))}</strong><span class="muted">${fmtMoney(v.sale_price)}</span></button>`).join('')}</div>` : '<div class="card empty">Сначала создайте автомобиль</div>';
+    root.innerHTML = shell(page('Ценники', 'Выберите автомобиль — его данные подставятся автоматически', picker));
+    return;
+  }
+  const title = [vehicle.brand,vehicle.model,vehicle.year].filter(Boolean).join(' ');
+  root.innerHTML = shell(page('Ценник', `${vehicle.vehicle_id} · ${title}`, '<div class="tool-frame-wrap"><iframe class="tool-frame" title="Генератор ценников" src="src/modules/price-tags/legacy/index.html"></iframe></div>', '<button class="btn" data-action="change-price-tag-vehicle">Сменить автомобиль</button>'));
+  const frame = document.querySelector('.tool-frame');
+  frame.addEventListener('load', () => frame.contentWindow.postMessage({ type: 'TITAN_PRICE_TAG_LOAD', vehicle }, location.origin), { once: true });
 }
 
 function fileList(items = []) {
@@ -201,6 +215,7 @@ async function render() {
     if (r.name === 'vehicles') return vehiclesView(r.query);
     if (r.name === 'leads' && r.id) return leadView(r.id);
     if (r.name === 'leads') return leadsView(r.query);
+    if (r.name === 'price-tags') return priceTagsView();
     if (r.name === 'settings') return settingsView();
     const names = {sales:'Продажи',analytics:'Аналитика',valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты'};
     return placeholderView(names[r.name] || 'Раздел');
@@ -210,6 +225,11 @@ async function render() {
 }
 
 document.addEventListener('click', async (event) => {
+  const priceTagVehicleId=event.target.closest('[data-price-tag-vehicle]')?.dataset.priceTagVehicle;
+  if(priceTagVehicleId){
+    try { const data=await TitanAPI.vehicles.get(priceTagVehicleId); AppState.set('currentVehicle',data.vehicle); return render(); }
+    catch(e) { return toast(errorMessage(e),'error'); }
+  }
   const row = event.target.closest('[data-href]'); if (row) return navigate(row.dataset.href);
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
@@ -222,6 +242,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'new-contact') return contactForm();
   if (action === 'new-valuation') return valuationForm();
   if (action === 'upload-file') return uploadForm();
+  if (action === 'open-price-tag') { navigate('price-tags'); return render(); }
+  if (action === 'change-price-tag-vehicle') { AppState.set('currentVehicle', null); return render(); }
   if (action === 'retry') return render();
   if (action === 'logout') { await Auth.logout(); navigate('dashboard'); return render(); }
   if (action === 'convert-lead') {

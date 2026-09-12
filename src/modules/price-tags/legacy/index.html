@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111111">
+  <meta name="description" content="Офлайн-генератор ценников ТИТАН АВТО">
+  <title>Генератор ценников — ТИТАН АВТО</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="ic-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-5M7 17h.01M8 12h.01M12 10h.01M17 12h.01M17 17h.01"/></symbol>
+    <symbol id="ic-calendar" viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2ZM8 2v4M16 2v4M3 9h18M7 13h4M7 17h7"/></symbol>
+    <symbol id="ic-gear" viewBox="0 0 24 24"><path d="M6 3v14M6 7h5V3M11 7v10M11 12h6V7M17 12v5M4 21h4M9 21h4M15 21h4"/></symbol>
+    <symbol id="ic-engine" viewBox="0 0 24 24"><path d="M7 8h9l3 3v7H7l-2-2H3v-6h2l2-2ZM10 8V5h4v3M19 12h2v4h-2M9 12h5"/></symbol>
+    <symbol id="ic-fuel" viewBox="0 0 24 24"><path d="M5 21V4h10v17M3 21h14M7 7h6v5H7zM15 8h2l3 3v7a2 2 0 0 1-4 0v-3M18 9l2-2"/></symbol>
+    <symbol id="ic-drive" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 6h8M6 8v8M18 8v8M8 18h8M12 6v12M9 12h6"/></symbol>
+    <symbol id="ic-ruble" viewBox="0 0 24 24"><path d="M7 20V4h7a5 5 0 0 1 0 10H7M5 14h10M5 18h8"/></symbol>
+    <symbol id="ic-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.8a15 15 0 0 0 5.7 5.7L16 13l5 2v4a2 2 0 0 1-2 2C10.2 20.5 3.5 13.8 3 5a2 2 0 0 1 2-2Z"/></symbol>
+    <symbol id="ic-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol>
+    <symbol id="ic-tag" viewBox="0 0 24 24"><path d="m3 12 9-9h7l2 2v7l-9 9-9-9Z"/><circle cx="16.5" cy="7.5" r="1"/></symbol>
+    <symbol id="ic-print" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7zM17 11h.01"/></symbol>
+    <symbol id="ic-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.8-.5-1.2.8-2-2.1-2.1-2 .8-1.2-.5-.8-2h-3l-.8 2-1.2.5-2-.8-2.1 2.1.8 2-.5 1.2-2 .8v3l2 .8.5 1.2-.8 2 2.1 2.1 2-.8 1.2.5.8 2h3l.8-2 1.2-.5 2 .8 2.1-2.1-.8-2 .5-1.2 2-.8Z"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="app-brand"><span class="app-mark">T</span><span><strong>ТИТАН АВТО</strong><small>ГЕНЕРАТОР ЦЕННИКОВ · V11</small></span></div>
+    <nav class="workspace-tabs" aria-label="Разделы проекта"><button class="workspace-tab active" type="button" data-view="editor">Редактор</button><button class="workspace-tab" type="button" data-view="library">Сохранённые <span id="savedCount">0</span></button></nav>
+    <div class="top-actions"><button class="btn btn-red" id="saveTagBtn" type="button">Сохранить ценник</button><button class="btn btn-dark" id="resetBtn" type="button">Новый</button><button class="btn btn-dark" id="printBtn" type="button"><svg><use href="#ic-print"/></svg>Печать / PDF</button></div>
+  </header>
+
+  <main class="app-shell view-panel" data-view-panel="editor">
+    <aside class="editor" id="editor">
+      <div class="editor-title"><div><span>ДАННЫЕ АВТОМОБИЛЯ</span><h1 id="editorHeading">Новый ценник</h1></div><small id="draftStatus">● Черновик сохранён</small></div>
+
+      <section class="panel">
+        <h2>Основные данные</h2>
+        <div class="fields two">
+          <label class="field"><span>Марка *</span><input data-field="brand" value="BMW" placeholder="BMW"></label>
+          <label class="field"><span>Модель *</span><input data-field="model" value="X3" placeholder="X3"></label>
+          <label class="field wide"><span>Комплектация</span><input data-field="trim" value="xDrive20i"></label>
+          <label class="field"><span>Год выпуска *</span><input data-field="year" inputmode="numeric" value="2014"></label>
+          <label class="field"><span>Пробег, км *</span><input data-field="mileage" inputmode="numeric" value="210000"></label>
+          <label class="field"><span>Коробка передач *</span><select data-select="transmission"><option>AT</option><option>MT</option><option>CVT</option><option>РОБОТ</option><option value="__custom">Свой вариант…</option></select><span class="custom-slot"><input data-custom="transmission" placeholder="Введите свой вариант"></span></label>
+          <label class="field"><span>Тип двигателя *</span><select data-select="fuel"><option>БЕНЗИН</option><option>ДИЗЕЛЬ</option><option>ГИБРИД</option><option>ЭЛЕКТРО</option><option value="__custom">Свой вариант…</option></select><span class="custom-slot"><input data-custom="fuel" placeholder="Введите свой вариант"></span></label>
+          <label class="field"><span>Объём ДВС, л *</span><input data-field="engine" value="2.0"></label>
+          <label class="field"><span>Мощность, л.с. *</span><input data-field="power" inputmode="numeric" value="184"></label>
+          <label class="field wide"><span>Привод *</span><select data-select="drive"><option>ПОЛНЫЙ ПРИВОД</option><option>ПЕРЕДНИЙ ПРИВОД</option><option>ЗАДНИЙ ПРИВОД</option><option value="__custom">Свой вариант…</option></select><span class="custom-slot"><input data-custom="drive" placeholder="Введите свой вариант"></span></label>
+        </div>
+        <div class="setting-row"><div><strong>Подписи характеристик</strong><small>Одна кнопка для всех шести подписей</small></div><label class="switch"><input type="checkbox" data-toggle="labels" checked><i></i></label></div>
+      </section>
+
+      <section class="panel">
+        <h2>Цена и оформление</h2>
+        <div class="fields">
+          <label class="field"><span>Основная цена, ₽ *</span><input class="price-input" data-field="price" inputmode="numeric" value="1830000"></label>
+          <div class="setting-row"><div><strong>Цена со скидкой</strong><small>Показывает старую и сегодняшнюю цену</small></div><label class="switch"><input type="checkbox" data-toggle="discount"><i></i></label></div>
+          <label class="field controlled" data-control="discount"><span>Цена сегодня, ₽</span><input data-field="salePrice" inputmode="numeric" value="1750000"></label>
+          <div class="setting-row"><div><strong>Тип продажи</strong><small>Комиссионная, товарная или своя</small></div><label class="switch"><input type="checkbox" data-toggle="saleType" checked><i></i></label></div>
+          <label class="field controlled" data-control="saleType"><span>Плашка</span><select data-select="saleType"><option>НА КОМИССИИ</option><option>ТОВАРНЫЙ</option><option>НОВОЕ ПОСТУПЛЕНИЕ</option><option value="__custom">Свой вариант…</option></select><span class="custom-slot"><input data-custom="saleType" placeholder="Введите свой вариант"></span></label>
+          <div class="setting-row"><div><strong>Статус автомобиля</strong><small>Большой водяной знак поверх листа</small></div><label class="switch"><input type="checkbox" data-toggle="status"><i></i></label></div>
+          <label class="field controlled" data-control="status"><span>Статус</span><select data-select="status"><option>ЗАБРОНИРОВАН</option><option>КУПЛЕН</option><option value="__custom">Свой вариант…</option></select><span class="custom-slot"><input data-custom="status" placeholder="Введите свой вариант"></span></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Дополнительные блоки</h2>
+        <div class="fields">
+          <div class="setting-row"><div><strong>Ключевые преимущества</strong><small>До трёх коротких пунктов</small></div><label class="switch"><input type="checkbox" data-toggle="benefits" checked><i></i></label></div>
+          <label class="field controlled" data-control="benefits"><span>Через запятую</span><textarea data-field="benefits" rows="3">1 владелец, Честный пробег, Обслужен</textarea></label>
+          <div class="setting-row"><div><strong>Условия покупки</strong><small>Выберите доступные варианты</small></div><label class="switch"><input type="checkbox" data-toggle="payment" checked><i></i></label></div>
+          <div class="payment-options controlled" data-control="payment"><label><input type="checkbox" data-payment="Наличные" checked>Наличные</label><label><input type="checkbox" data-payment="Кредит" checked>Кредит</label><label><input type="checkbox" data-payment="Трейд-ин" checked>Трейд-ин</label><label><input type="checkbox" data-payment="Обмен" checked>Обмен</label><label><input type="checkbox" id="customPaymentToggle">Свой вариант</label><span class="custom-slot wide-slot"><input id="customPayment" placeholder="Введите свой вариант"></span></div>
+          <div class="setting-row"><div><strong>Номер позиции</strong><small>Автоматически из даты поступления</small></div><label class="switch"><input type="checkbox" data-toggle="stock" checked><i></i></label></div>
+          <label class="field controlled" data-control="stock"><span>Дата поступления</span><input data-field="arrivalDate" type="date" value="2026-08-29"><em>Пример: 29.08 → 08029</em></label>
+          <div class="setting-row"><div><strong>QR-код Авито</strong><small>Ссылка или готовое изображение</small></div><label class="switch"><input type="checkbox" data-toggle="qr" checked><i></i></label></div>
+          <div class="qr-editor controlled" data-control="qr"><label class="field"><span>Ссылка на объявление</span><input data-field="qrUrl" type="url" value="https://www.avito.ru/"></label><label class="upload"><input id="qrUpload" type="file" accept="image/*">Загрузить изображение QR</label></div>
+        </div>
+      </section>
+
+      <section class="panel"><h2>Контакт</h2><div class="fields"><label class="field"><span>Менеджер</span><select id="managerSelect"></select></label><button class="manage-btn" id="manageBtn" type="button"><svg><use href="#ic-settings"/></svg>Настроить контакты</button></div></section>
+      <section class="panel"><h2>Печать</h2><div class="setting-row no-line"><div><strong>Чёрно-белый режим</strong><small>Красный станет чёрным</small></div><label class="switch"><input type="checkbox" data-toggle="mono"><i></i></label></div></section>
+    </aside>
+
+    <section class="preview-pane" id="previewPane">
+      <div class="preview-head"><span>● ПРЕДПРОСМОТР A4</span><b>210 × 297 мм</b></div>
+      <div class="paper-frame" id="paperFrame">
+        <article class="price-card" id="priceCard">
+          <div class="rule rule-one"></div><div class="rule rule-two"></div><div class="rule rule-three"></div>
+          <img class="print-logo" src="Логотип/TITAN_AUTO_logo_3000px_transparent.png" alt="ТИТАН АВТО — автомобили с пробегом">
+          <div class="stock-block"><small>№ ПОЗИЦИИ</small><strong data-out="stock">08029</strong></div>
+          <div class="qr-block"><div id="qrCode"></div><strong>НА АВИТО</strong></div>
+          <div class="sale-badge"><svg><use href="#ic-tag"/></svg><span data-out="saleType">НА КОМИССИИ</span></div>
+          <div class="watermark" data-out="status">ЗАБРОНИРОВАН</div>
+
+          <div class="model-block"><h2><span data-out="brand">BMW</span><span data-out="model">X3</span></h2><p data-out="trim">xDrive20i</p></div>
+
+          <div class="spec spec-1"><img class="spec-icon" src="icons/transportation.png" alt=""><div><strong data-out="mileage">210 000 км</strong><small>ПРОБЕГ</small></div></div>
+          <div class="spec spec-2"><img class="spec-icon" src="icons/schedule.png" alt=""><div><strong data-out="year">2014</strong><small>ГОД ВЫПУСКА</small></div></div>
+          <div class="spec spec-3"><img class="spec-icon" src="icons/gearbox.png" alt=""><div><strong data-out="transmission">AT</strong><small>КОРОБКА ПЕРЕДАЧ</small></div></div>
+          <div class="spec spec-4"><img class="spec-icon" src="icons/engine.png" alt=""><div><strong><span data-out="engine">2.0 л.</span><b> / </b><span data-out="power">184 л.с.</span></strong><small>ОБЪЁМ ДВС / МОЩНОСТЬ</small></div></div>
+          <div class="spec spec-5"><img class="spec-icon" src="icons/fuel-pump.png" alt=""><div><strong data-out="fuel">БЕНЗИН</strong><small>ТИП ДВИГАТЕЛЯ</small></div></div>
+          <div class="spec spec-6"><img class="spec-icon" src="icons/4wd.png" alt=""><div><strong data-out="drive">ПОЛНЫЙ ПРИВОД</strong><small>ПРИВОД</small></div></div>
+
+          <div class="benefits-block" id="benefitsOut"></div>
+          <div class="payment-block" data-out="payment">Наличные • Кредит • Трейд-ин • Обмен</div>
+
+          <div class="price-block"><del data-out="oldPrice">1 830 000 ₽</del><div><strong data-out="price">1 830 000</strong><svg><use href="#ic-ruble"/></svg></div></div>
+          <div class="contact-block"><span>ЕСТЬ ВОПРОСЫ? ЗВОНИТЕ</span><svg class="arrow"><use href="#ic-arrow"/></svg><svg><use href="#ic-phone"/></svg><strong><b id="managerName">Менеджер</b> <i></i> <b id="managerPhone"></b></strong></div>
+          <div class="footer-brand">
+            <b>ООО «ТИТАН АВТО»</b>
+            <small>ОГРН / ИНН / КПП — укажите в настройках компании</small>
+            <small>Адрес компании — укажите в настройках компании</small>
+            <small>Телефон / банк / БИК — укажите в настройках компании</small>
+          </div>
+        </article>
+      </div>
+      <p class="print-note">A4 · масштаб 100% · поля «Нет» · фоновая графика включена</p>
+    </section>
+  </main>
+
+  <section class="library-view view-panel" data-view-panel="library" hidden>
+    <div class="library-shell">
+      <header class="library-head"><div><span>ЛОКАЛЬНАЯ БАЗА</span><h1>Сохранённые ценники</h1><p>Открывайте ценники для изменения или создавайте копии. Данные остаются в этом браузере.</p></div><div class="library-tools"><button class="btn btn-red" id="newTagBtn" type="button">+ Новый ценник</button><button class="btn btn-light" id="exportTagsBtn" type="button">Экспорт JSON</button><button class="btn btn-light" id="importTagsBtn" type="button">Импорт JSON</button><input id="importTagsInput" type="file" accept="application/json,.json" hidden></div></header>
+      <div class="library-note"><strong>Файл для корня проекта:</strong> экспорт создаёт <code>price-tags.json</code>. Его можно положить рядом с <code>index.html</code> как резервную копию.</div>
+      <div class="saved-empty" id="savedEmpty"><strong>Сохранённых ценников пока нет</strong><span>Заполните ценник в редакторе и нажмите «Сохранить ценник».</span></div>
+      <div class="saved-grid" id="savedGrid"></div>
+    </div>
+  </section>
+
+  <dialog id="managerDialog"><form method="dialog" class="dialog-card"><div class="dialog-head"><div><span>НАСТРОЙКИ</span><h2>Контакты менеджеров</h2></div><button value="close" aria-label="Закрыть">×</button></div><div id="managerList" class="manager-list"></div><button class="add-manager" id="addManagerBtn" type="button">+ Добавить менеджера</button><div class="dialog-actions"><button value="close">Отмена</button><button class="btn-red" id="saveManagersBtn" value="default">Сохранить</button></div></form></dialog>
+
+  <script src="vendor/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
