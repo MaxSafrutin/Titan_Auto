@@ -44,6 +44,10 @@ export const TitanAPI = Object.freeze({
     logout: () => request('auth.logout'),
   },
   dashboard: { stats: () => request('dashboard.stats') },
+  settings: {
+    get: () => request('settings.get'),
+    update: (company) => request('settings.update', { company }),
+  },
   vehicles: {
     list: (filters = {}) => request('vehicle.list', filters),
     publicList: (filters = {}) => request('vehicle.publicList', filters),

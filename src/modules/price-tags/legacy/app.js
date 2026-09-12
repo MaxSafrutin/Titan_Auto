@@ -70,7 +70,7 @@
   $('#saveManagersBtn').addEventListener('click',()=>{state.managers=$$('.manager-edit').map(r=>({name:r.children[0].value.trim()||'Менеджер',phone:r.children[1].value.trim()}));if(!state.managers.length)state.managers=copy(defaults.managers);state.managerIndex=Math.min(state.managerIndex,state.managers.length-1);renderManagerSelect();renderManager();save()});
   addEventListener('message',event=>{
     if(event.origin!==location.origin||event.data?.type!=='TITAN_PRICE_TAG_LOAD')return;
-    const vehicle=event.data.vehicle||{};
+    const vehicle=event.data.vehicle||{},company=event.data.company||{};
     state=normalizeState({...state,fields:{...state.fields,
       brand:vehicle.brand||'',model:vehicle.model||'',trim:vehicle.generation||'',year:vehicle.year||'',
       mileage:vehicle.mileage||'',transmission:vehicle.transmission||'',fuel:vehicle.fuel_type||'',
@@ -78,7 +78,12 @@
       price:vehicle.sale_price||vehicle.market_price||'',salePrice:vehicle.sale_price||'',
       benefits:vehicle.notes||'',qrUrl:vehicle.source_url||''
     }});
+    if(Array.isArray(company.managers)&&company.managers.length){state.managers=company.managers;state.managerIndex=0;}
     currentRecordId=null;qrKey='';hydrate();updateEditorContext();switchView('editor');
+    $('#companyLegalName').textContent=company.legal_name||'ТИТАН АВТО';
+    $('#companyRegistration').textContent=[company.ogrn&&`ОГРН ${company.ogrn}`,company.inn&&`ИНН ${company.inn}`,company.kpp&&`КПП ${company.kpp}`].filter(Boolean).join(' | ')||'Реквизиты не заполнены';
+    $('#companyAddress').textContent=company.address||'Адрес не заполнен';
+    $('#companyBank').textContent=[company.phone,company.bank_name,company.bik&&`БИК ${company.bik}`].filter(Boolean).join(' | ')||'Контакты и банк не заполнены';
     document.title=`Ценник ${vehicle.vehicle_id||''} — ТИТАН АВТО`;
   });
   hydrate();

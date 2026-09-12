@@ -7,6 +7,8 @@ function routeAction(action, payload, token) {
   if (action === 'auth.logout') return logout(token);
   var routes = {
     'dashboard.stats': function () { return dashboardStats(); },
+    'settings.get': function () { return companySettingsGet(); },
+    'settings.update': function () { return companySettingsUpdate(payload, session); },
     'vehicle.list': function () { return vehicleList(payload); },
     'vehicle.get': function () { return vehicleGet(payload.vehicle_id); },
     'vehicle.create': function () { return vehicleCreate(payload, session); },

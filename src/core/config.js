@@ -5,7 +5,7 @@ export const Config = Object.freeze({
   apiUrl: storedApiUrl,
   requestTimeoutMs: 25000,
   appName: 'TITAN AUTO',
-  version: '0.2.0',
+  version: '0.3.0',
 });
 
 export function saveApiUrl(value) {

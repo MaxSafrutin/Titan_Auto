@@ -32,6 +32,7 @@
 - Files: `file.list`, `file.upload`, `file.delete`, `file.getDownload`.
 - Tasks: `task.list`, `task.create`, `task.update`.
 - Dashboard: `dashboard.stats`.
+- Settings: `settings.get`, `settings.update` — только с действующей сессией.
 
 ## Клиент
 
@@ -44,4 +45,3 @@ PIN не хранится во frontend. Backend сравнивает SHA-256 ha
 ## Ошибки
 
 Коды предназначены для программы, сообщения — для человека. Stack trace наружу не возвращается. Техническая ошибка пишется через `console.error` Apps Script.
-

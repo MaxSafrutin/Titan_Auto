@@ -153,9 +153,11 @@ async function priceTagsView() {
     return;
   }
   const title = [vehicle.brand,vehicle.model,vehicle.year].filter(Boolean).join(' ');
+  const settings = await TitanAPI.settings.get();
+  const company = settings.company || {};
   root.innerHTML = shell(page('Ценник', `${vehicle.vehicle_id} · ${title}`, '<div class="tool-frame-wrap"><iframe class="tool-frame" title="Генератор ценников" src="src/modules/price-tags/legacy/index.html"></iframe></div>', '<button class="btn" data-action="change-price-tag-vehicle">Сменить автомобиль</button>'));
   const frame = document.querySelector('.tool-frame');
-  frame.addEventListener('load', () => frame.contentWindow.postMessage({ type: 'TITAN_PRICE_TAG_LOAD', vehicle }, location.origin), { once: true });
+  frame.addEventListener('load', () => frame.contentWindow.postMessage({ type: 'TITAN_PRICE_TAG_LOAD', vehicle, company }, location.origin), { once: true });
 }
 
 function fileList(items = []) {
@@ -170,9 +172,21 @@ async function catalogView() {
   root.innerHTML = `<main class="page"><div class="page-head"><a class="brand" href="#/catalog"><img src="assets/brand/titan-auto-logo.svg" alt="TITAN AUTO"></a><a class="btn" href="#/dashboard">Вход для сотрудников</a></div><div class="eyebrow">Автомобили с пробегом</div><h1>В наличии</h1><p class="muted">Честные автомобили и понятное сопровождение сделки.</p>${warning}<div class="grid catalog-grid" style="margin-top:28px">${rows.length ? rows.map(v => `<article class="card catalog-card"><div class="catalog-media">${v.cover_url ? `<img src="${h(v.cover_url)}" alt="${h(v.brand+' '+v.model)}" style="width:100%;height:100%;object-fit:cover">` : 'Фото готов'}</div><div class="catalog-body"><div class="eyebrow">${h(v.year || '')}</div><h2>${h([v.brand,v.model].filter(Boolean).join(' '))}</h2><p class="muted">${h([v.mileage ? `${Number(v.mileage).toLocaleString('ru-RU')} км` : '',v.transmission,v.engine_volume].filter(Boolean).join(' · '))}</p><strong style="font-size:24px">${fmtMoney(v.sale_price)}</strong></div></article>`).join('') : '<div class="card empty">Опубликованных автомобилей пока нет</div>'}</div></main>`;
 }
 
-function settingsView() {
-  const body = `<div class="grid two"><section class="card"><h2>Подключение API</h2><form class="form-grid" data-form="api"><div class="field wide"><label>Google Apps Script Web App URL</label><input name="api_url" type="url" value="${h(Config.apiUrl)}" placeholder="https://script.google.com/macros/s/.../exec"></div><div class="wide actions"><button class="btn primary">Сохранить</button></div></form></section><section class="card"><h2>Архитектура</h2><p class="muted">Таблица и Drive подключаются только на backend через Script Properties. Секретов в браузере нет.</p><p>Версия ${h(Config.version)}</p></section></div>`;
-  root.innerHTML = shell(page('Настройки', 'Конфигурация этого браузера', body));
+async function settingsView() {
+  const settings = await TitanAPI.settings.get();
+  const company = settings.company || {};
+  const managersText = (company.managers || []).map(item => `${item.name || ''} | ${item.phone || ''}`).join('\n');
+  const body = `<section class="card accent"><h2>Реквизиты и сотрудники</h2><p class="muted">Хранятся в закрытой Google Таблице и загружаются только после входа. В публичном коде этих данных нет.</p><form class="form-grid" data-form="company-settings">
+    <div class="field wide"><label>Юридическое наименование</label><input name="legal_name" value="${h(company.legal_name)}"></div>
+    <div class="field"><label>ОГРН</label><input name="ogrn" value="${h(company.ogrn)}"></div><div class="field"><label>ИНН</label><input name="inn" value="${h(company.inn)}"></div>
+    <div class="field"><label>КПП</label><input name="kpp" value="${h(company.kpp)}"></div><div class="field"><label>Телефон компании</label><input name="phone" type="tel" value="${h(company.phone)}"></div>
+    <div class="field wide"><label>Юридический адрес</label><input name="address" value="${h(company.address)}"></div>
+    <div class="field"><label>Банк</label><input name="bank_name" value="${h(company.bank_name)}"></div><div class="field"><label>БИК</label><input name="bik" value="${h(company.bik)}"></div>
+    <div class="field"><label>Расчётный счёт</label><input name="bank_account" value="${h(company.bank_account)}"></div><div class="field"><label>Корреспондентский счёт</label><input name="correspondent_account" value="${h(company.correspondent_account)}"></div>
+    <div class="field wide"><label>Сотрудники — по одному в строке: Имя | Телефон</label><textarea name="managers_text" rows="7">${h(managersText)}</textarea></div>
+    <div class="wide actions"><button class="btn primary">Сохранить реквизиты</button></div>
+  </form></section><div class="grid two" style="margin-top:18px"><section class="card"><h2>Подключение API</h2><form class="form-grid" data-form="api"><div class="field wide"><label>Google Apps Script Web App URL</label><input name="api_url" type="url" value="${h(Config.apiUrl)}" placeholder="https://script.google.com/macros/s/.../exec"></div><div class="wide actions"><button class="btn primary">Сохранить</button></div></form></section><section class="card"><h2>Архитектура</h2><p class="muted">Таблица и Drive подключаются только на backend через Script Properties. Секретов в браузере нет.</p><p>Версия ${h(Config.version)}</p></section></div>`;
+  root.innerHTML = shell(page('Настройки', 'Защищённые данные компании и конфигурация', body));
 }
 
 function placeholderView(name) {
@@ -271,6 +285,14 @@ document.addEventListener('submit', async (event) => {
     if (type === 'api') return saveApiUrl(formObject(form).api_url);
     if (type === 'login') { await Auth.login(formObject(form).pin); navigate('dashboard'); return render(); }
     if (type === 'search') { const q=formObject(form).q; return navigate(`vehicles?q=${encodeURIComponent(q)}`); }
+    if (type === 'company-settings') {
+      const payload=formObject(form);
+      const managers=payload.managers_text.split(/\r?\n/).map(line=>{const parts=line.split('|');return {name:(parts.shift()||'').trim(),phone:parts.join('|').trim()};}).filter(item=>item.name||item.phone);
+      delete payload.managers_text;
+      await TitanAPI.settings.update({...payload,managers});
+      toast('Реквизиты сохранены');
+      return render();
+    }
     if (type === 'vehicle') { const payload=formObject(form); const id=form.dataset.id; const result=id ? await TitanAPI.vehicles.update(id,payload) : await TitanAPI.vehicles.create(payload); closeModal(); toast('Автомобиль сохранён'); navigate(`vehicles/${id || result.vehicle_id}`); return render(); }
     if (type === 'lead') { const payload=formObject(form); const id=form.dataset.id; const result=id ? await TitanAPI.leads.update(id,payload) : await TitanAPI.leads.create(payload); closeModal(); toast(id ? 'Лид сохранён' : 'Лид создан'); navigate(`leads/${id || result.lead_id}`); return render(); }
     const vehicle=AppState.get('currentVehicle');
