@@ -117,8 +117,19 @@ async function vehiclesView(query = '') {
 
 async function leadsView(query = '') {
   const rows = await TitanAPI.leads.list({ q: query });
-  const body = rows.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Клиент</th><th>Автомобиль</th><th>Телефон</th><th>Следующий контакт</th><th>Статус</th></tr></thead><tbody>${rows.map(v => `<tr><td>${h(v.lead_id)}</td><td>${h(v.seller_name || '—')}</td><td><b>${h([v.brand,v.model,v.year].filter(Boolean).join(' '))}</b></td><td>${h(v.phone || '—')}</td><td>${fmtDate(v.next_contact_at)}</td><td><span class="badge">${h(v.status || 'new')}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="card empty">Лидов пока нет</div>';
+  const body = rows.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Клиент</th><th>Автомобиль</th><th>Телефон</th><th>Следующий контакт</th><th>Статус</th></tr></thead><tbody>${rows.map(v => `<tr data-href="leads/${h(v.lead_id)}"><td>${h(v.lead_id)}</td><td>${h(v.seller_name || '—')}</td><td><b>${h([v.brand,v.model,v.year].filter(Boolean).join(' '))}</b></td><td>${h(v.phone || '—')}</td><td>${fmtDate(v.next_contact_at)}</td><td><span class="badge">${h(v.status || 'new')}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="card empty">Лидов пока нет</div>';
   root.innerHTML = shell(page('Лиды', 'Входящие обращения и следующие действия', body, '<button class="btn primary" data-action="new-lead">+ Лид</button>'));
+}
+
+async function leadView(id) {
+  const data = await TitanAPI.leads.get(id);
+  const lead = data.lead;
+  AppState.set('currentLead', lead);
+  AppState.set('currentVehicle', null);
+  const vehicleTitle = [lead.brand, lead.model, lead.year].filter(Boolean).join(' ') || 'Автомобиль не указан';
+  const linkedVehicle = lead.vehicle_id ? `<a class="btn" href="#/vehicles/${h(lead.vehicle_id)}">Открыть ${h(lead.vehicle_id)}</a>` : '<button class="btn primary" data-action="convert-lead">Создать автомобиль</button>';
+  const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(lead.status || 'new')}</span><span class="muted">${h(lead.lead_id)}</span></div><h2 style="margin-top:22px">${h(vehicleTitle)}</h2><p class="muted">Цена продавца: ${fmtMoney(lead.seller_price)}</p><div class="actions">${linkedVehicle}${lead.source_url ? `<a class="btn" href="${h(lead.source_url)}" target="_blank" rel="noopener">Объявление</a>` : ''}</div></section><section class="card"><h2>Продавец</h2><p><b>${h(lead.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(lead.phone || 'Телефон не указан')}</span></p><p>Следующий контакт: <b>${fmtDate(lead.next_contact_at)}</b></p><p class="muted">${h(lead.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(lead.phone)}">Позвонить</a><button class="btn" data-action="new-contact">Новый контакт</button></div></section></div><section class="card" style="margin-top:18px"><h2>История контактов</h2>${timeline((data.contacts || []).map(x => ({ ...x, title: x.result || x.type, next_action_at: x.created_at })))}</section>`;
+  root.innerHTML = shell(page(lead.lead_id, vehicleTitle, body, '<button class="btn" data-action="edit-lead">Изменить</button>'));
 }
 
 async function vehicleView(id) {
@@ -171,8 +182,9 @@ function vehicleForm(vehicle = {}) {
   f.status.value = vehicle.status || 'new'; f.public_status.value = vehicle.public_status || 'private';
 }
 
-function leadForm() {
-  closeModal(); showModal('Новый лид', `<form class="form-grid" data-form="lead"><div class="field"><label>Марка *</label><input name="brand" required></div><div class="field"><label>Модель *</label><input name="model" required></div><div class="field"><label>Телефон *</label><input name="phone" type="tel" required></div><div class="field"><label>Год</label><input name="year" type="number"></div><div class="field wide"><label>Ссылка на объявление</label><input name="source_url" type="url"></div><div class="field"><label>Имя продавца</label><input name="seller_name"></div><div class="field"><label>Цена продавца</label><input name="seller_price" type="number"></div><div class="field wide"><label>Заметки</label><textarea name="notes"></textarea></div><div class="wide actions"><button class="btn primary">Создать лид</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
+function leadForm(lead = {}) {
+  closeModal(); showModal(lead.lead_id ? `Изменить ${lead.lead_id}` : 'Новый лид', `<form class="form-grid" data-form="lead" data-id="${h(lead.lead_id || '')}"><div class="field"><label>Марка *</label><input name="brand" value="${h(lead.brand)}" required></div><div class="field"><label>Модель *</label><input name="model" value="${h(lead.model)}" required></div><div class="field"><label>Телефон *</label><input name="phone" type="tel" value="${h(lead.phone)}" required></div><div class="field"><label>Год</label><input name="year" type="number" value="${h(lead.year)}"></div><div class="field wide"><label>Ссылка на объявление</label><input name="source_url" type="url" value="${h(lead.source_url)}"></div><div class="field"><label>Имя продавца</label><input name="seller_name" value="${h(lead.seller_name)}"></div><div class="field"><label>Цена продавца</label><input name="seller_price" type="number" value="${h(lead.seller_price)}"></div><div class="field"><label>Следующий контакт</label><input name="next_contact_at" type="datetime-local" value="${h(String(lead.next_contact_at || '').slice(0, 16))}"></div><div class="field"><label>Статус</label><select name="status"><option value="new">Новый</option><option value="in_work">В работе</option><option value="qualified">Квалифицирован</option><option value="closed">Закрыт</option></select></div><div class="field wide"><label>Заметки</label><textarea name="notes">${h(lead.notes)}</textarea></div><div class="wide actions"><button class="btn primary">${lead.lead_id ? 'Сохранить' : 'Создать лид'}</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
+  document.querySelector('[data-form="lead"]').status.value = lead.status || 'new';
 }
 
 function contactForm() { showModal('Новый контакт', `<form class="form-grid" data-form="contact"><div class="field"><label>Тип</label><select name="type"><option>Звонок</option><option>Сообщение</option><option>Встреча</option><option>Осмотр</option></select></div><div class="field"><label>Результат *</label><input name="result" required></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="field"><label>Следующее действие</label><input name="next_action"></div><div class="field"><label>Когда</label><input name="next_action_at" type="datetime-local"></div><div class="wide actions"><button class="btn primary">Сохранить контакт</button></div></form>`); }
@@ -187,6 +199,7 @@ async function render() {
     if (r.name === 'dashboard') return dashboardView();
     if (r.name === 'vehicles' && r.id) return vehicleView(r.id);
     if (r.name === 'vehicles') return vehiclesView(r.query);
+    if (r.name === 'leads' && r.id) return leadView(r.id);
     if (r.name === 'leads') return leadsView(r.query);
     if (r.name === 'settings') return settingsView();
     const names = {sales:'Продажи',analytics:'Аналитика',valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты'};
@@ -204,12 +217,24 @@ document.addEventListener('click', async (event) => {
   if (action === 'new-entry') return newEntryModal();
   if (action === 'new-vehicle') return vehicleForm();
   if (action === 'new-lead') return leadForm();
+  if (action === 'edit-lead') return leadForm(AppState.get('currentLead') || {});
   if (action === 'edit-vehicle') return vehicleForm(AppState.get('currentVehicle') || {});
   if (action === 'new-contact') return contactForm();
   if (action === 'new-valuation') return valuationForm();
   if (action === 'upload-file') return uploadForm();
   if (action === 'retry') return render();
   if (action === 'logout') { await Auth.logout(); navigate('dashboard'); return render(); }
+  if (action === 'convert-lead') {
+    const lead = AppState.get('currentLead');
+    if (!lead || lead.vehicle_id) return;
+    try {
+      const vehicle = await TitanAPI.vehicles.create({ brand: lead.brand, model: lead.model, year: lead.year, seller_name: lead.seller_name, seller_phone: lead.phone, source: lead.source, source_url: lead.source_url, seller_price: lead.seller_price, manager: lead.manager, notes: lead.notes, status: 'new' });
+      await TitanAPI.leads.update(lead.lead_id, { vehicle_id: vehicle.vehicle_id, status: 'qualified' });
+      toast(`Создан автомобиль ${vehicle.vehicle_id}`);
+      navigate(`vehicles/${vehicle.vehicle_id}`);
+      return render();
+    } catch(e) { toast(errorMessage(e), 'error'); }
+  }
   if (action === 'mark-sold') {
     const v = AppState.get('currentVehicle');
     if (!v || !confirm(`Отметить ${v.vehicle_id} как проданный?`)) return;
@@ -225,9 +250,10 @@ document.addEventListener('submit', async (event) => {
     if (type === 'login') { await Auth.login(formObject(form).pin); navigate('dashboard'); return render(); }
     if (type === 'search') { const q=formObject(form).q; return navigate(`vehicles?q=${encodeURIComponent(q)}`); }
     if (type === 'vehicle') { const payload=formObject(form); const id=form.dataset.id; const result=id ? await TitanAPI.vehicles.update(id,payload) : await TitanAPI.vehicles.create(payload); closeModal(); toast('Автомобиль сохранён'); navigate(`vehicles/${id || result.vehicle_id}`); return render(); }
-    if (type === 'lead') { await TitanAPI.leads.create(formObject(form)); closeModal(); toast('Лид создан'); navigate('leads'); return render(); }
+    if (type === 'lead') { const payload=formObject(form); const id=form.dataset.id; const result=id ? await TitanAPI.leads.update(id,payload) : await TitanAPI.leads.create(payload); closeModal(); toast(id ? 'Лид сохранён' : 'Лид создан'); navigate(`leads/${id || result.lead_id}`); return render(); }
     const vehicle=AppState.get('currentVehicle');
-    if (type === 'contact') { await TitanAPI.contacts.create({vehicle_id:vehicle.vehicle_id,...formObject(form)}); closeModal(); toast('Контакт сохранён'); return render(); }
+    const lead=AppState.get('currentLead');
+    if (type === 'contact') { await TitanAPI.contacts.create({vehicle_id:vehicle?.vehicle_id || '',lead_id:vehicle ? '' : lead?.lead_id || '',...formObject(form)}); closeModal(); toast('Контакт сохранён'); return render(); }
     if (type === 'valuation') { await TitanAPI.valuations.create({vehicle_id:vehicle.vehicle_id,...formObject(form)}); closeModal(); toast('Оценка сохранена'); return render(); }
     if (type === 'file') { const file=form.elements.file.files[0]; if(file.size>8*1024*1024) throw new Error('В первой версии размер файла ограничен 8 МБ.'); const data_url=await new Promise((resolve,reject)=>{const reader=new FileReader(); reader.onload=()=>resolve(reader.result); reader.onerror=reject; reader.readAsDataURL(file);}); await TitanAPI.files.upload({vehicle_id:vehicle.vehicle_id,type:form.elements.type.value,description:form.elements.description.value,filename:file.name,mime_type:file.type,data_url}); closeModal(); toast('Файл загружен'); return render(); }
   } catch(e) { toast(errorMessage(e),'error'); } finally { if(button) button.disabled=false; }

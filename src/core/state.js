@@ -4,6 +4,7 @@ const data = {
   session: sessionStorage.getItem('titan.session') || '',
   user: null,
   currentVehicle: null,
+  currentLead: null,
   online: navigator.onLine,
 };
 
