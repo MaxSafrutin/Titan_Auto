@@ -7,6 +7,8 @@ function routeAction(action, payload, token) {
   if (action === 'auth.logout') return logout(token);
   var routes = {
     'dashboard.stats': function () { return dashboardStats(); },
+    'workspace.snapshot': function () { return workspaceSnapshot(); },
+    'documents.snapshot': function () { return documentsSnapshot(); },
     'settings.get': function () { return companySettingsGet(); },
     'settings.update': function () { return companySettingsUpdate(payload, session); },
     'counterparty.list': function () { return counterpartyList(payload); },
@@ -42,4 +44,24 @@ function routeAction(action, payload, token) {
   };
   if (!routes[action]) throw apiError('UNKNOWN_ACTION', 'Неизвестное действие API: ' + action);
   return routes[action]();
+}
+
+function workspaceSnapshot() {
+  return {
+    vehicles: vehicleList({ include_archived: true }),
+    leads: leadList({}),
+    sales: saleList({}),
+    valuations: valuationList({}),
+    tasks: taskList({})
+  };
+}
+
+function documentsSnapshot() {
+  return {
+    vehicles: vehicleList({ include_archived: true }),
+    counterparties: counterpartyList({}),
+    deals: dealList({}),
+    settings: companySettingsGet(),
+    templates: templateList({ include_content: true })
+  };
 }

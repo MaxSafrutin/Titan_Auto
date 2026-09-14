@@ -106,6 +106,12 @@ textarea { resize: vertical; min-height: 96px; }
 .catalog-card { overflow: hidden; padding: 0; }
 .catalog-media { aspect-ratio: 16/10; display: grid; place-items: center; background: var(--raised); color: #666; }
 .catalog-body { padding: 20px; }
+.catalog-summary { margin-top: 20px; }
+.catalog-price { display: block; margin-top: 18px; font-family: Montserrat, Inter, sans-serif; font-size: 26px; }
+.public-catalog { padding-top: 24px; }
+.loading-card { min-height: 220px; display: grid; place-items: center; align-content: center; gap: 18px; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+.loading-card i { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--red-bright); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .tool-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .tool-choice { min-height: 150px; color: var(--text); text-align: left; cursor: pointer; display: grid; align-content: center; gap: 10px; }
 .tool-choice strong { font-family: Montserrat, Inter, sans-serif; font-size: 19px; }
@@ -118,6 +124,7 @@ textarea { resize: vertical; min-height: 96px; }
   .shell { display: block; padding-bottom: 70px; }
   .sidebar { display: none; }
   .topbar { padding: 12px 16px; }
+  .public-stock-link { display: none; }
   .page { padding: 24px 16px; }
   .page-head { align-items: stretch; flex-direction: column; }
   .stats, .two, .form-grid, .catalog-grid { grid-template-columns: 1fr; }

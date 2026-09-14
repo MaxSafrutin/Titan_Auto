@@ -56,6 +56,7 @@ function publicVehicle(row) {
     body_type: row.body_type,
     color: row.color,
     sale_price: row.sale_price,
+    stock_type: row.status === 'in_stock' ? 'in_stock' : 'virtual',
     description: row.description,
     cover_url: row.cover_file_id ? 'https://drive.google.com/thumbnail?id=' + row.cover_file_id + '&sz=w1200' : ''
   };

@@ -12,7 +12,7 @@ function nextId(entity, prefix) {
 
 function vehicleList(filters) {
   var q = String((filters || {}).q || '').toLowerCase().replace(/\s/g, '');
-  return sortNewest(listRecords('VEHICLES').filter(function (row) {
+  return sortNewest(listRecordsLite('VEHICLES').filter(function (row) {
     if (row.status === 'archived' && !(filters || {}).include_archived) return false;
     return !q || containsVehicle(row, q);
   }));
@@ -26,13 +26,13 @@ function containsVehicle(row, q) {
 
 function publicVehicleList(filters) {
   var q = String((filters || {}).q || '').toLowerCase().replace(/\s/g, '');
-  return sortNewest(listRecords('VEHICLES').filter(function (row) {
+  return sortNewest(listRecordsLite('VEHICLES').filter(function (row) {
     return row.public_status === 'published' && row.status !== 'sold' && row.status !== 'archived' && (!q || containsVehicle(row, q));
   })).map(publicVehicle);
 }
 
 function vehicleGet(id) {
-  var vehicle = findRecord('VEHICLES', 'vehicle_id', id);
+  var vehicle = findRecordLite('VEHICLES', 'vehicle_id', id);
   if (!vehicle) throw apiError('VEHICLE_NOT_FOUND', 'Автомобиль не найден.');
   return {
     vehicle: vehicle,
@@ -88,11 +88,11 @@ function vehicleMarkSold(payload, session) {
 }
 
 function dashboardStats() {
-  var vehicles = listRecords('VEHICLES');
-  var leads = listRecords('LEADS');
-  var tasks = listRecords('TASKS');
-  var sales = listRecords('SALES');
-  var valuations = listRecords('VALUATIONS');
+  var vehicles = listRecordsLite('VEHICLES');
+  var leads = listRecordsLite('LEADS');
+  var tasks = listRecordsLite('TASKS');
+  var sales = listRecordsLite('SALES');
+  var valuations = listRecordsLite('VALUATIONS');
   var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   var month = today.slice(0, 7);
   var valued = {};

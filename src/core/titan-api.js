@@ -1,6 +1,10 @@
 import { Config } from './config.js';
 import { AppState } from './state.js';
 
+const READ_ACTIONS = new Set(['health','auth.check','dashboard.stats','workspace.snapshot','documents.snapshot','settings.get','counterparty.list','deal.list','template.list','vehicle.list','vehicle.publicList','vehicle.get','lead.list','lead.get','contact.list','valuation.list','sale.list','file.list','file.getDownload','task.list']);
+const responseCache = new Map();
+const CACHE_TTL_MS = 20000;
+
 export class TitanApiError extends Error {
   constructor(code, message) {
     super(message || 'Не удалось выполнить операцию.');
@@ -14,6 +18,11 @@ async function request(action, payload = {}) {
   if (!navigator.onLine) throw new TitanApiError('OFFLINE', 'Нет подключения к интернету. Введённые данные остались в форме.');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Config.requestTimeoutMs);
+  const cacheable = READ_ACTIONS.has(action) && action !== 'file.getDownload';
+  const cacheKey = cacheable ? `${action}:${JSON.stringify(payload)}:${AppState.get('session')}` : '';
+  const cached = cacheable ? responseCache.get(cacheKey) : null;
+  if (cached && Date.now() - cached.time < CACHE_TTL_MS) { clearTimeout(timer); return cached.value; }
+  if (!cacheable) responseCache.clear();
   try {
     const response = await fetch(Config.apiUrl, {
       method: 'POST',
@@ -25,6 +34,7 @@ async function request(action, payload = {}) {
     if (!response.ok) throw new TitanApiError('NETWORK_ERROR', 'Сервис временно недоступен. Повторите попытку.');
     const envelope = await response.json();
     if (!envelope.ok) throw new TitanApiError(envelope.error?.code, envelope.error?.message);
+    if (cacheable) responseCache.set(cacheKey, { time: Date.now(), value: envelope.data });
     return envelope.data;
   } catch (error) {
     if (error.name === 'AbortError') throw new TitanApiError('TIMEOUT', 'Сервис отвечает слишком долго. Повторите попытку.');
@@ -44,6 +54,22 @@ export const TitanAPI = Object.freeze({
     logout: () => request('auth.logout'),
   },
   dashboard: { stats: () => request('dashboard.stats') },
+  workspace: { snapshot: async () => {
+    try { return await request('workspace.snapshot'); }
+    catch (error) {
+      if (error.code !== 'UNKNOWN_ACTION') throw error;
+      const [vehicles, leads, sales, valuations, tasks] = await Promise.all([request('vehicle.list',{include_archived:true}),request('lead.list'),request('sale.list'),request('valuation.list'),request('task.list')]);
+      return { vehicles, leads, sales, valuations, tasks };
+    }
+  } },
+  documents: { snapshot: async () => {
+    try { return await request('documents.snapshot'); }
+    catch (error) {
+      if (error.code !== 'UNKNOWN_ACTION') throw error;
+      const [vehicles, counterparties, deals, settings, templates] = await Promise.all([request('vehicle.list',{include_archived:true}),request('counterparty.list'),request('deal.list'),request('settings.get'),request('template.list',{include_content:true})]);
+      return { vehicles, counterparties, deals, settings, templates };
+    }
+  } },
   settings: {
     get: () => request('settings.get'),
     update: (company) => request('settings.update', { company }),

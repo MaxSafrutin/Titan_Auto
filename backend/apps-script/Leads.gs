@@ -1,12 +1,12 @@
 function leadList(filters) {
   var q = String((filters || {}).q || '').toLowerCase().replace(/\s/g, '');
-  return sortNewest(listRecords('LEADS').filter(function (row) {
+  return sortNewest(listRecordsLite('LEADS').filter(function (row) {
     return !q || ['lead_id','seller_name','phone','brand','model','source_url'].some(function (key) { return String(row[key] || '').toLowerCase().replace(/\s/g, '').indexOf(q) >= 0; });
   }));
 }
 
 function leadGet(id) {
-  var lead = findRecord('LEADS', 'lead_id', id);
+  var lead = findRecordLite('LEADS', 'lead_id', id);
   if (!lead) throw apiError('LEAD_NOT_FOUND', 'Лид не найден.');
   return { lead: lead, contacts: contactList({ lead_id: id }) };
 }

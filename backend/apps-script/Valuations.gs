@@ -1,5 +1,5 @@
 function valuationList(filters) {
-  return sortNewest(listRecords('VALUATIONS').filter(function (row) {
+  return sortNewest(listRecordsLite('VALUATIONS').filter(function (row) {
     return !(filters || {}).vehicle_id || String(row.vehicle_id) === String(filters.vehicle_id);
   }));
 }

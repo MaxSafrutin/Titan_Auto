@@ -1,5 +1,5 @@
 function contactList(filters) {
-  return sortNewest(listRecords('CONTACTS').filter(function (x) {
+  return sortNewest(listRecordsLite('CONTACTS').filter(function (x) {
     return (!(filters || {}).vehicle_id || String(x.vehicle_id) === String(filters.vehicle_id)) && (!(filters || {}).lead_id || String(x.lead_id) === String(filters.lead_id));
   }));
 }

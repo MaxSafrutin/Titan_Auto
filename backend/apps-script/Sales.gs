@@ -1,5 +1,5 @@
 function saleList(filters) {
-  return sortNewest(listRecords('SALES').filter(function (x) { return !(filters || {}).vehicle_id || String(x.vehicle_id) === String(filters.vehicle_id); }));
+  return sortNewest(listRecordsLite('SALES').filter(function (x) { return !(filters || {}).vehicle_id || String(x.vehicle_id) === String(filters.vehicle_id); }));
 }
 function saleCreate(payload, session) {
   requireFields(payload,['vehicle_id']);

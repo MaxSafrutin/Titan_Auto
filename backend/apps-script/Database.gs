@@ -12,10 +12,14 @@ var DB_SCHEMA = {
   SETTINGS: ['key','value','description','updated_at']
 };
 
+var DATABASE_RUNTIME = { spreadsheet: null, sheets: {} };
+
 function getSpreadsheet() {
+  if (DATABASE_RUNTIME.spreadsheet) return DATABASE_RUNTIME.spreadsheet;
   var id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
   if (!id) throw apiError('SETUP_REQUIRED', 'Не задан SPREADSHEET_ID. Запустите configureProject() и setupProject().');
-  return SpreadsheetApp.openById(id);
+  DATABASE_RUNTIME.spreadsheet = SpreadsheetApp.openById(id);
+  return DATABASE_RUNTIME.spreadsheet;
 }
 
 function setupDatabase() {
@@ -38,10 +42,12 @@ function setupDatabase() {
 }
 
 function sheetContext(name) {
+  if (DATABASE_RUNTIME.sheets[name]) return DATABASE_RUNTIME.sheets[name];
   var sheet = getSpreadsheet().getSheetByName(name);
   if (!sheet) throw apiError('DATABASE_NOT_READY', 'Лист ' + name + ' не найден. Запустите setupProject().');
   var headers = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0].map(String);
-  return { sheet: sheet, headers: headers };
+  DATABASE_RUNTIME.sheets[name] = { sheet: sheet, headers: headers };
+  return DATABASE_RUNTIME.sheets[name];
 }
 
 function listRecords(name) {
@@ -54,6 +60,29 @@ function listRecords(name) {
     ctx.headers.forEach(function (header, index) { item[header] = row[index]; });
     return item;
   });
+}
+
+// Списки для интерфейса не должны читать тяжёлый payload_json. Полный архив
+// остаётся в таблице и используется только в специализированных операциях.
+function listRecordsLite(name) {
+  var ctx = sheetContext(name);
+  var lastRow = ctx.sheet.getLastRow();
+  if (lastRow < 2) return [];
+  var payloadIndex = ctx.headers.indexOf('payload_json');
+  var width = payloadIndex === ctx.headers.length - 1 ? payloadIndex : ctx.headers.length;
+  var headers = ctx.headers.slice(0, width);
+  var values = ctx.sheet.getRange(2, 1, lastRow - 1, width).getValues();
+  return values.map(function (row) {
+    var item = {};
+    headers.forEach(function (header, index) { item[header] = row[index]; });
+    return item;
+  });
+}
+
+function findRecordLite(name, idField, id) {
+  var rows = listRecordsLite(name);
+  for (var i = 0; i < rows.length; i += 1) if (String(rows[i][idField]) === String(id)) return rows[i];
+  return null;
 }
 
 function appendRecord(name, data) {
