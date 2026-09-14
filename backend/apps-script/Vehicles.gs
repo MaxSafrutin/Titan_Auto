@@ -75,8 +75,15 @@ function vehicleUpdate(id, changes, session) {
 
 function vehicleMarkSold(payload, session) {
   var id = payload.vehicle_id;
-  var vehicle = vehicleUpdate(id, { status: 'sold', public_status: 'private', sale_price: payload.sale_price }, session);
-  var sale = saleCreate({ vehicle_id: id, sale_date: payload.sale_date || nowIso().slice(0,10), purchase_price: vehicle.purchase_price || vehicle.buyout_price, sale_price: vehicle.sale_price, commission: vehicle.commission, expenses: vehicle.estimated_investments, manager: vehicle.manager }, session);
+  var vehicle = vehicleUpdate(id, { status: 'sold', public_status: 'private', sale_price: payload.sale_price, purchase_price: payload.purchase_price, commission: payload.commission }, session);
+  var salePayload = cleanObject(payload);
+  salePayload.vehicle_id = id;
+  salePayload.sale_date = salePayload.sale_date || nowIso().slice(0,10);
+  salePayload.purchase_price = salePayload.purchase_price || vehicle.purchase_price || vehicle.buyout_price;
+  salePayload.sale_price = salePayload.sale_price || vehicle.sale_price;
+  salePayload.commission = salePayload.commission === undefined ? vehicle.commission : salePayload.commission;
+  salePayload.manager = salePayload.manager || vehicle.manager;
+  var sale = saleCreate(salePayload, session);
   return { vehicle: vehicle, sale: sale };
 }
 

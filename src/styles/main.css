@@ -90,6 +90,18 @@ textarea { resize: vertical; min-height: 96px; }
 .metric strong { font-family: Montserrat; font-size: 22px; }
 .timeline { display: grid; gap: 12px; }
 .timeline-item { padding-left: 18px; border-left: 2px solid var(--border); }
+.analytics-grid .card { min-height: 250px; }
+.analytics-list { display: grid; gap: 18px; }
+.analytics-row { display: grid; grid-template-columns: minmax(110px, .8fr) minmax(120px, 1.6fr) 42px; align-items: center; gap: 14px; }
+.analytics-row > div:first-child { display: grid; gap: 3px; }
+.analytics-row strong { text-align: right; font-family: Montserrat, Inter, sans-serif; }
+.analytics-track { height: 10px; overflow: hidden; border-radius: 999px; background: var(--raised); }
+.analytics-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--red), var(--red-bright)); }
+.metric-list { display: grid; gap: 0; }
+.metric-list > div { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 0; border-bottom: 1px solid var(--border); }
+.metric-list > div:last-child { border-bottom: 0; }
+.metric-list span { color: var(--muted); }
+.metric-list b { font-family: Montserrat, Inter, sans-serif; font-size: 20px; text-align: right; }
 .catalog-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
 .catalog-card { overflow: hidden; padding: 0; }
 .catalog-media { aspect-ratio: 16/10; display: grid; place-items: center; background: var(--raised); color: #666; }
@@ -115,4 +127,5 @@ textarea { resize: vertical; min-height: 96px; }
   th, td { padding: 13px; }
   .tool-picker { grid-template-columns: 1fr; }
   .tool-frame { min-height: 760px; height: calc(100vh - 180px); }
+  .analytics-row { grid-template-columns: 100px 1fr 34px; gap: 9px; }
 }

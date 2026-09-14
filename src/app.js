@@ -11,6 +11,7 @@ const dateTime = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'short', timeStyl
 const h = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]);
 const fmtMoney = (value) => value === '' || value == null ? '—' : money.format(Number(value) || 0);
 const fmtDate = (value) => { try { return value ? dateTime.format(new Date(value)) : '—'; } catch { return '—'; } };
+const num = (value) => Number(String(value ?? '').replace(/[^0-9,.-]/g, '').replace(',', '.')) || 0;
 const formObject = (form) => Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value]));
 
 function toast(message, type = '') {
@@ -119,6 +120,65 @@ async function leadsView(query = '') {
   const rows = await TitanAPI.leads.list({ q: query });
   const body = rows.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Клиент</th><th>Автомобиль</th><th>Телефон</th><th>Следующий контакт</th><th>Статус</th></tr></thead><tbody>${rows.map(v => `<tr data-href="leads/${h(v.lead_id)}"><td>${h(v.lead_id)}</td><td>${h(v.seller_name || '—')}</td><td><b>${h([v.brand,v.model,v.year].filter(Boolean).join(' '))}</b></td><td>${h(v.phone || '—')}</td><td>${fmtDate(v.next_contact_at)}</td><td><span class="badge">${h(v.status || 'new')}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="card empty">Лидов пока нет</div>';
   root.innerHTML = shell(page('Лиды', 'Входящие обращения и следующие действия', body, '<button class="btn primary" data-action="new-lead">+ Лид</button>'));
+}
+
+async function salesView() {
+  const [sales, vehicles] = await Promise.all([TitanAPI.sales.list(), TitanAPI.vehicles.list({ include_archived: true })]);
+  const vehiclesById = Object.fromEntries(vehicles.map(v => [v.vehicle_id, v]));
+  const totals = sales.reduce((result, sale) => {
+    result.revenue += num(sale.sale_price);
+    result.commission += num(sale.commission);
+    result.rewards += num(sale.actual_manager_payment) + num(sale.actual_director_payment);
+    result.profit += num(sale.profit);
+    return result;
+  }, { revenue: 0, commission: 0, rewards: 0, profit: 0 });
+  const metrics = [
+    ['Продаж', sales.length], ['Оборот', fmtMoney(totals.revenue)],
+    ['Комиссия', fmtMoney(totals.commission)], ['Доход компании', fmtMoney(totals.profit)],
+  ].map(([label, value], index) => `<article class="card stat ${index === 3 ? 'accent' : ''}"><span>${h(label)}</span><b>${h(value)}</b></article>`).join('');
+  const table = sales.length ? `<div class="table-wrap" style="margin-top:18px"><table><thead><tr><th>Дата</th><th>Автомобиль</th><th>Тип</th><th>Цена</th><th>Комиссия</th><th>Сотрудникам</th><th>Компании</th></tr></thead><tbody>${sales.map(sale => {
+    const vehicle = vehiclesById[sale.vehicle_id] || {};
+    const title = [vehicle.brand, vehicle.model, vehicle.year].filter(Boolean).join(' ') || sale.vehicle_id;
+    const rewards = num(sale.actual_manager_payment) + num(sale.actual_director_payment);
+    return `<tr data-href="vehicles/${h(sale.vehicle_id)}"><td>${h(String(sale.sale_date || '').split('-').reverse().join('.'))}</td><td><b>${h(title)}</b><div class="muted">${h(sale.sale_id)}</div></td><td><span class="badge success">${sale.deal_type === 'commission' ? 'Комиссия' : 'Собственный'}</span></td><td>${fmtMoney(sale.sale_price)}</td><td>${fmtMoney(sale.commission)}</td><td>${fmtMoney(rewards)}</td><td><b>${fmtMoney(sale.profit)}</b></td></tr>`;
+  }).join('')}</tbody></table></div>` : '<div class="card empty">Продаж пока нет</div>';
+  const note = totals.rewards ? `<div class="notice" style="margin-top:18px">Вознаграждения сотрудников: ${fmtMoney(totals.rewards)}. Они уже исключены из дохода компании.</div>` : '';
+  root.innerHTML = shell(page('Продажи', 'Финансовый результат и распределение комиссии', `<div class="grid stats">${metrics}</div>${note}${table}`, '<button class="btn primary" data-action="new-sale">+ Оформить продажу</button>'));
+}
+
+function analyticsBar(label, value, max, detail = '') {
+  const width = max > 0 ? Math.max(4, Math.round(value / max * 100)) : 0;
+  return `<div class="analytics-row"><div><b>${h(label)}</b>${detail ? `<span class="muted">${h(detail)}</span>` : ''}</div><div class="analytics-track"><i style="width:${width}%"></i></div><strong>${h(value)}</strong></div>`;
+}
+
+async function analyticsView() {
+  const [vehicles, leads, sales, valuations] = await Promise.all([TitanAPI.vehicles.list({ include_archived: true }), TitanAPI.leads.list(), TitanAPI.sales.list(), TitanAPI.valuations.list('')]);
+  const active = vehicles.filter(v => !['sold', 'archived'].includes(v.status));
+  const sold = vehicles.filter(v => v.status === 'sold');
+  const pipeline = active.reduce((sum, v) => sum + num(v.sale_price), 0);
+  const revenue = sales.reduce((sum, v) => sum + num(v.sale_price), 0);
+  const profit = sales.reduce((sum, v) => sum + num(v.profit), 0);
+  const commission = sales.reduce((sum, v) => sum + num(v.commission), 0);
+  const conversionBase = leads.length || 1;
+  const conversion = Math.round(leads.filter(v => v.status === 'won').length / conversionBase * 100);
+  const cards = [
+    ['Портфель в работе', fmtMoney(pipeline)], ['Продажи', fmtMoney(revenue)],
+    ['Комиссия', fmtMoney(commission)], ['Чистый доход', fmtMoney(profit)],
+    ['Средний чек', fmtMoney(sales.length ? revenue / sales.length : 0)], ['Конверсия лидов', `${conversion}%`],
+    ['Активные автомобили', active.length], ['Оценки', valuations.length],
+  ].map(([label, value], index) => `<article class="card stat ${index === 3 ? 'accent' : ''}"><span>${h(label)}</span><b>${h(value)}</b></article>`).join('');
+  const statusRows = [
+    ['В работе', active.length], ['Продано', sold.length], ['Архив', vehicles.filter(v => v.status === 'archived').length],
+  ];
+  const maxStatus = Math.max(1, ...statusRows.map(([, value]) => value));
+  const leadRows = [
+    ['Активные', leads.filter(v => !['won','lost','archived','closed'].includes(v.status)).length],
+    ['Успешные', leads.filter(v => v.status === 'won').length],
+    ['Закрытые', leads.filter(v => ['lost','archived','closed'].includes(v.status)).length],
+  ];
+  const maxLeads = Math.max(1, ...leadRows.map(([, value]) => value));
+  const body = `<div class="grid stats">${cards}</div><div class="grid two analytics-grid" style="margin-top:18px"><section class="card"><h2>Автомобили по статусам</h2><div class="analytics-list">${statusRows.map(([label,value]) => analyticsBar(label,value,maxStatus)).join('')}</div></section><section class="card"><h2>Воронка лидов</h2><div class="analytics-list">${leadRows.map(([label,value]) => analyticsBar(label,value,maxLeads)).join('')}</div></section><section class="card"><h2>Экономика продаж</h2><div class="metric-list"><div><span>Комиссия всего</span><b>${fmtMoney(commission)}</b></div><div><span>Сотрудникам</span><b>${fmtMoney(sales.reduce((sum,v)=>sum+num(v.actual_manager_payment)+num(v.actual_director_payment),0))}</b></div><div><span>Компании</span><b>${fmtMoney(profit)}</b></div></div></section><section class="card"><h2>Контроль данных</h2><div class="metric-list"><div><span>Без VIN</span><b>${vehicles.filter(v=>!v.vin).length}</b></div><div><span>Без телефона</span><b>${vehicles.filter(v=>!v.seller_phone).length}</b></div><div><span>Без оценки</span><b>${active.filter(v=>!valuations.some(x=>x.vehicle_id===v.vehicle_id)).length}</b></div></div></section></div>`;
+  root.innerHTML = shell(page('Аналитика', 'Живые показатели из единой базы TITAN AUTO', body));
 }
 
 async function leadView(id) {
@@ -257,6 +317,34 @@ function contactForm() { showModal('Новый контакт', `<form class="fo
 function valuationForm() { showModal('Новая оценка', `<form class="form-grid" data-form="valuation"><div class="field"><label>Рыночная цена</label><input name="market_price" type="number"></div><div class="field"><label>Рекомендуемая цена</label><input name="recommended_price" type="number"></div><div class="field"><label>Цена выкупа</label><input name="buyout_price" type="number"></div><div class="field"><label>Вложения</label><input name="estimated_investments" type="number"></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="wide actions"><button class="btn primary">Сохранить оценку</button></div></form>`); }
 function uploadForm() { showModal('Загрузить файл', `<form class="form-grid" data-form="file"><div class="field"><label>Раздел</label><select name="type"><option value="photos">Фото</option><option value="documents">Документы</option><option value="price-tags">Ценники</option><option value="stories">Сторис</option><option value="reports">Отчёты</option></select></div><div class="field"><label>Файл</label><input name="file" type="file" required></div><div class="field wide"><label>Описание</label><input name="description"></div><div class="wide actions"><button class="btn primary">Загрузить</button></div></form>`); }
 
+function saleForm(vehicle = {}, vehicles = []) {
+  closeModal();
+  const options = (vehicles.length ? vehicles : [vehicle]).filter(Boolean).map(v => `<option value="${h(v.vehicle_id)}">${h(`${v.vehicle_id} · ${[v.brand,v.model,v.year].filter(Boolean).join(' ')}`)}</option>`).join('');
+  showModal('Оформить продажу', `<form class="form-grid" data-form="sale">
+    <div class="field wide"><label>Автомобиль *</label><select name="vehicle_id" required>${options}</select></div>
+    <div class="field"><label>Дата продажи *</label><input name="sale_date" type="date" value="${new Date().toISOString().slice(0,10)}" required></div><div class="field"><label>Тип сделки</label><select name="deal_type"><option value="commission">Комиссионный автомобиль</option><option value="company_purchase">Автомобиль компании</option></select></div>
+    <div class="field"><label>Цена продажи *</label><input name="sale_price" type="number" min="0" value="${h(vehicle.sale_price)}" required></div><div class="field"><label>Комиссия салона</label><input name="commission" type="number" min="0" value="${h(vehicle.commission)}"></div>
+    <div class="field"><label>Цена закупки</label><input name="purchase_price" type="number" min="0" value="${h(vehicle.purchase_price || vehicle.buyout_price)}"></div><div class="field"><label>Фактические расходы</label><input name="expenses" type="number" min="0" value="0"></div>
+    <div class="field"><label>Поставил на комиссию *</label><input name="accepted_by" value="${h(vehicle.responsible_manager || vehicle.manager || 'Максим Сафрутин')}" required></div><div class="field"><label>Продал *</label><input name="sold_by" value="" required></div>
+    <div class="field"><label>Доля постановщика, % комиссии</label><input name="acquisition_reward_percent" type="number" min="0" max="100" step="0.1" value="15"></div><div class="field"><label>Доля продавца, % комиссии</label><input name="sales_reward_percent" type="number" min="0" max="100" step="0.1" value="15"></div>
+    <div class="field"><label>Комиссия по кредиту</label><input name="credit_commission" type="number" min="0" value="0"></div><div class="field"><label>Налог</label><input name="tax" type="number" min="0" value="0"></div>
+    <div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div>
+    <div class="wide notice">Правило комиссионной реализации: 30% комиссии сотрудникам. Если роли разделены — по 15%; если один сотрудник выполнил обе роли — он получает все 30%.</div>
+    <div class="wide actions"><button class="btn primary">Завершить сделку</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div>
+  </form>`);
+  const form = document.querySelector('[data-form="sale"]');
+  if (vehicle.vehicle_id) form.vehicle_id.value = vehicle.vehicle_id;
+  form.addEventListener('change', event => {
+    if (event.target.name !== 'vehicle_id') return;
+    const selected = vehicles.find(v => v.vehicle_id === event.target.value); if (!selected) return;
+    form.sale_price.value = selected.sale_price || '';
+    form.commission.value = selected.commission || '';
+    form.purchase_price.value = selected.purchase_price || selected.buyout_price || '';
+    form.expenses.value = 0;
+    form.accepted_by.value = selected.responsible_manager || selected.manager || 'Максим Сафрутин';
+  });
+}
+
 async function render() {
   const r = route();
   if (r.name === 'catalog') return catalogView();
@@ -267,10 +355,12 @@ async function render() {
     if (r.name === 'vehicles') return vehiclesView(r.query);
     if (r.name === 'leads' && r.id) return leadView(r.id);
     if (r.name === 'leads') return leadsView(r.query);
+    if (r.name === 'sales') return salesView();
+    if (r.name === 'analytics') return analyticsView();
     if (r.name === 'price-tags') return priceTagsView();
     if (r.name === 'settings') return settingsView();
     if (r.name === 'documents') return documentsView();
-    const names = {sales:'Продажи',analytics:'Аналитика',valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты'};
+    const names = {valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты'};
     return placeholderView(names[r.name] || 'Раздел');
   } catch (e) {
     root.innerHTML = shell(page('Не удалось загрузить раздел', errorMessage(e), '<div class="card empty"><button class="btn" data-action="retry">Повторить</button></div>'));
@@ -295,6 +385,10 @@ document.addEventListener('click', async (event) => {
   if (action === 'new-contact') return contactForm();
   if (action === 'new-valuation') return valuationForm();
   if (action === 'upload-file') return uploadForm();
+  if (action === 'new-sale') {
+    try { const vehicles = (await TitanAPI.vehicles.list({ include_archived: true })).filter(v => !['sold','archived'].includes(v.status)); return saleForm(vehicles[0] || {}, vehicles); }
+    catch(e) { return toast(errorMessage(e),'error'); }
+  }
   if (action === 'open-price-tag') { navigate('price-tags'); return render(); }
   if (action === 'change-price-tag-vehicle') { AppState.set('currentVehicle', null); return render(); }
   if (action === 'retry') return render();
@@ -312,8 +406,8 @@ document.addEventListener('click', async (event) => {
   }
   if (action === 'mark-sold') {
     const v = AppState.get('currentVehicle');
-    if (!v || !confirm(`Отметить ${v.vehicle_id} как проданный?`)) return;
-    try { await TitanAPI.vehicles.markSold(v.vehicle_id, { sale_price: v.sale_price }); toast('Автомобиль отмечен как проданный'); render(); } catch(e) { toast(errorMessage(e),'error'); }
+    if (!v) return;
+    return saleForm(v, [v]);
   }
 });
 
@@ -338,6 +432,17 @@ document.addEventListener('submit', async (event) => {
     const lead=AppState.get('currentLead');
     if (type === 'contact') { await TitanAPI.contacts.create({vehicle_id:vehicle?.vehicle_id || '',lead_id:vehicle ? '' : lead?.lead_id || '',...formObject(form)}); closeModal(); toast('Контакт сохранён'); return render(); }
     if (type === 'valuation') { await TitanAPI.valuations.create({vehicle_id:vehicle.vehicle_id,...formObject(form)}); closeModal(); toast('Оценка сохранена'); return render(); }
+    if (type === 'sale') {
+      const payload=formObject(form), commission=num(payload.commission), salePrice=num(payload.sale_price), purchasePrice=num(payload.purchase_price), expenses=num(payload.expenses), tax=num(payload.tax), creditCommission=num(payload.credit_commission);
+      const salesPercent=num(payload.sales_reward_percent), acquisitionPercent=num(payload.acquisition_reward_percent);
+      if (salesPercent+acquisitionPercent>100) throw new Error('Сумма долей сотрудников не может превышать 100% комиссии.');
+      const salesReward=Math.round(commission*salesPercent)/100, acquisitionReward=Math.round(commission*acquisitionPercent)/100;
+      const ownerAmount=payload.deal_type==='commission' ? salePrice-commission : 0;
+      const profit=payload.deal_type==='commission' ? commission+creditCommission-expenses-tax-salesReward-acquisitionReward : salePrice-purchasePrice+creditCommission-expenses-tax-salesReward-acquisitionReward;
+      const participants=`${payload.sold_by||'Продавец'} — ${salesPercent}% комиссии (${fmtMoney(salesReward)}); ${payload.accepted_by||'Постановщик'} — ${acquisitionPercent}% комиссии (${fmtMoney(acquisitionReward)}); компания — ${100-salesPercent-acquisitionPercent}%`;
+      await TitanAPI.vehicles.markSold(payload.vehicle_id,{...payload,sale_price:salePrice,purchase_price:purchasePrice,owner_amount:ownerAmount,commission,expenses,tax,credit_commission:creditCommission,profit,margin:payload.deal_type==='commission'?commission:salePrice-purchasePrice,participation:participants,actual_buyer_payment:salePrice,actual_manager_payment:salesReward,actual_director_payment:acquisitionReward,responsible_manager:payload.accepted_by,manager:payload.accepted_by,comment:[payload.comment,`Распределение: ${participants}. Чистый доход компании: ${fmtMoney(profit)}.`].filter(Boolean).join('\n')});
+      closeModal();toast('Продажа оформлена и автомобиль закрыт');navigate('sales');return render();
+    }
     if (type === 'file') { const file=form.elements.file.files[0]; if(file.size>8*1024*1024) throw new Error('В первой версии размер файла ограничен 8 МБ.'); const data_url=await new Promise((resolve,reject)=>{const reader=new FileReader(); reader.onload=()=>resolve(reader.result); reader.onerror=reject; reader.readAsDataURL(file);}); await TitanAPI.files.upload({vehicle_id:vehicle.vehicle_id,type:form.elements.type.value,description:form.elements.description.value,filename:file.name,mime_type:file.type,data_url}); closeModal(); toast('Файл загружен'); return render(); }
   } catch(e) { toast(errorMessage(e),'error'); } finally { if(button) button.disabled=false; }
 });
