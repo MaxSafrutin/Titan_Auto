@@ -90,13 +90,14 @@ function dashboardStats() {
   var month = today.slice(0, 7);
   var valued = {};
   valuations.forEach(function (x) { valued[x.vehicle_id] = true; });
-  var upcoming = tasks.filter(function (x) { return x.status !== 'done' && x.due_at; }).concat(leads.filter(function (x) { return x.next_contact_at; }).map(function (x) { return { lead_id: x.lead_id, title: 'Связаться: ' + [x.brand,x.model].filter(Boolean).join(' '), due_at: x.next_contact_at }; }));
+  var activeLead = function (x) { return ['won','lost','archived'].indexOf(String(x.status)) < 0; };
+  var upcoming = tasks.filter(function (x) { return x.status !== 'done' && x.due_at; }).concat(leads.filter(function (x) { return activeLead(x) && x.next_contact_at; }).map(function (x) { return { lead_id: x.lead_id, title: 'Связаться: ' + [x.brand,x.model].filter(Boolean).join(' '), due_at: x.next_contact_at }; }));
   upcoming.sort(function (a,b) { return String(a.due_at).localeCompare(String(b.due_at)); });
   return {
     active_vehicles: vehicles.filter(function (x) { return ['sold','archived'].indexOf(x.status) < 0; }).length,
     new_leads: leads.filter(function (x) { return x.status === 'new'; }).length,
-    callbacks_today: leads.filter(function (x) { return String(x.next_contact_at).slice(0,10) === today; }).length,
-    meetings_upcoming: leads.filter(function (x) { return String(x.meet_at) >= today; }).length,
+    callbacks_today: leads.filter(function (x) { return activeLead(x) && String(x.next_contact_at).slice(0,10) === today; }).length,
+    meetings_upcoming: leads.filter(function (x) { return activeLead(x) && String(x.meet_at) >= today; }).length,
     without_valuation: vehicles.filter(function (x) { return ['sold','archived'].indexOf(x.status) < 0 && !valued[x.vehicle_id]; }).length,
     sold_this_month: sales.filter(function (x) { return String(x.sale_date).slice(0,7) === month; }).length,
     margin_this_month: sales.filter(function (x) { return String(x.sale_date).slice(0,7) === month; }).reduce(function (sum,x) { return sum + Number(x.profit || x.margin || 0); }, 0),
