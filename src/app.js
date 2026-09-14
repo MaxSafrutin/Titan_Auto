@@ -160,6 +160,43 @@ async function priceTagsView() {
   frame.addEventListener('load', () => frame.contentWindow.postMessage({ type: 'TITAN_PRICE_TAG_LOAD', vehicle, company }, location.origin), { once: true });
 }
 
+function documentVehicle(v = {}) {
+  const statusMap={sold:'sold',archived:'archived',reserved:'reserved',in_stock:'in_stock'};
+  const makeModel=[v.brand,v.model,v.generation].filter(Boolean).join(' ');
+  return { ...v, id:v.vehicle_id, make_model:makeModel, registration_plate:v.registration_plate||'', pts:v.pts_number||'', sts:v.sts_number||'', owner_id:v.owner_id||'', acquisition_type:v.acquisition_type||'other', status:statusMap[v.status]||(v.acquisition_type==='commission'?'consignment':'in_stock'), data:{vin:v.vin||'',category:v.category||'',type:v.vehicle_type||v.body_type||'',make_model:makeModel,year:String(v.year||''),engine:v.engine_number||[v.engine_volume,v.engine_power&&`${v.engine_power} л.с.`].filter(Boolean).join(' / '),chassis:v.chassis_number||'',body_number:v.body_number||'',color:v.color||'',pts:v.pts_number||'',pts_issued:v.pts_issued||'',sts:v.sts_number||'',sts_issued:v.sts_issued||'',registration_plate:v.registration_plate||'',special_notes:v.special_notes||''},created_at:v.created_at||'',updated_at:v.updated_at||'' };
+}
+function documentCompany(c = {}) { return {id:'titan-auto',kind:'organization',name:c.legal_name||'ТИТАН АВТО',inn:c.inn||'',kpp:c.kpp||'',ogrn:c.ogrn||'',director:c.director||'',bank_name:c.bank_name||'',bank_account:c.bank_account||'',correspondent_account:c.correspondent_account||'',bik:c.bik||'',birth_date:'',passport_series:'',passport_number:'',passport_issue_date:'',passport_issued_by:'',division_code:'',address:c.address||'',phone:c.phone||'',is_own_company:true,created_at:'',updated_at:''}; }
+function documentParty(p = {}) { return {...p,id:p.counterparty_id||p.id}; }
+function vehiclePayload(v = {}) { const words=String(v.make_model||'').trim().split(/\s+/); return {brand:v.brand||words.shift()||'Без марки',model:v.model||words.join(' ')||'Без модели',generation:v.generation||'',vin:v.vin||v.data?.vin||'',year:v.year||v.data?.year||'',color:v.color||v.data?.color||'',registration_plate:v.registration_plate||v.data?.registration_plate||'',category:v.data?.category||'',vehicle_type:v.data?.type||'',engine_number:v.data?.engine||'',chassis_number:v.data?.chassis||'',body_number:v.data?.body_number||'',pts_number:v.pts||v.data?.pts||'',pts_issued:v.data?.pts_issued||'',sts_number:v.sts||v.data?.sts||'',sts_issued:v.data?.sts_issued||'',special_notes:v.data?.special_notes||'',owner_id:v.owner_id||'',acquisition_type:v.acquisition_type||'other',status:v.status==='consignment'?'in_stock':v.status||'in_stock'}; }
+
+async function documentsView() {
+  const [vehicles,counterparties,deals,settings,templates]=await Promise.all([TitanAPI.vehicles.list({include_archived:true}),TitanAPI.counterparties.list(),TitanAPI.deals.list(),TitanAPI.settings.get(),TitanAPI.templates.list(true)]);
+  const company=documentCompany(settings.company||{}),templateMap=Object.fromEntries(templates.map(item=>[item.name,item.data_url]));
+  const payload={company,vehicles:vehicles.map(documentVehicle),counterparties:[company,...counterparties.filter(p=>(p.counterparty_id||p.id)!=='titan-auto').map(documentParty)],deals:deals.map(d=>({...d,id:d.deal_id||d.id})),templates:templateMap};
+  root.innerHTML=shell(page('Документы','Сделки, контрагенты и защищённые DOCX-шаблоны','<div class="tool-frame-wrap"><iframe class="tool-frame documents-frame" title="Конструктор документов" src="src/modules/documents/app/index.html"></iframe></div>'));
+  const frame=document.querySelector('.documents-frame');
+  frame.addEventListener('load',()=>frame.contentWindow.postMessage({type:'TITAN_DOCUMENTS_LOAD',payload},location.origin),{once:true});
+}
+
+async function saveDocumentRecord(store,value){
+  if(store==='counterparties'){
+    if(value.id==='titan-auto')throw new Error('Реквизиты нашей компании редактируются в настройках TITAN AUTO.');
+    const data={...value};delete data.id;delete data.counterparty_id;
+    const saved=String(value.id||'').startsWith('CP-')?await TitanAPI.counterparties.update(value.id,data):await TitanAPI.counterparties.create(data);
+    return documentParty(saved);
+  }
+  if(store==='vehicles'){
+    const data=vehiclePayload(value),saved=String(value.id||'').startsWith('TA-')?await TitanAPI.vehicles.update(value.id,data):await TitanAPI.vehicles.create(data);
+    return documentVehicle(saved);
+  }
+  if(store==='deals'){
+    const data={...value};delete data.id;delete data.deal_id;
+    const saved=String(value.id||'').startsWith('DEAL-')?await TitanAPI.deals.update(value.id,data):await TitanAPI.deals.create(data);
+    return {...saved,id:saved.deal_id||saved.id};
+  }
+  throw new Error('Неизвестный раздел документов.');
+}
+
 function fileList(items = []) {
   if (!items.length) return '<div class="empty">Файлов пока нет</div>';
   return `<div class="timeline">${items.map(x => `<div class="timeline-item"><b>${h(x.filename)}</b><div class="muted">${h(x.type)} · версия ${h(x.version)}</div><button class="btn ghost" data-download="${h(x.file_id)}">Скачать</button></div>`).join('')}</div>`;
@@ -179,7 +216,8 @@ async function settingsView() {
   const body = `<section class="card accent"><h2>Реквизиты и сотрудники</h2><p class="muted">Хранятся в закрытой Google Таблице и загружаются только после входа. В публичном коде этих данных нет.</p><form class="form-grid" data-form="company-settings">
     <div class="field wide"><label>Юридическое наименование</label><input name="legal_name" value="${h(company.legal_name)}"></div>
     <div class="field"><label>ОГРН</label><input name="ogrn" value="${h(company.ogrn)}"></div><div class="field"><label>ИНН</label><input name="inn" value="${h(company.inn)}"></div>
-    <div class="field"><label>КПП</label><input name="kpp" value="${h(company.kpp)}"></div><div class="field"><label>Телефон компании</label><input name="phone" type="tel" value="${h(company.phone)}"></div>
+    <div class="field"><label>КПП</label><input name="kpp" value="${h(company.kpp)}"></div><div class="field"><label>Руководитель</label><input name="director" value="${h(company.director)}"></div>
+    <div class="field"><label>Телефон компании</label><input name="phone" type="tel" value="${h(company.phone)}"></div>
     <div class="field wide"><label>Юридический адрес</label><input name="address" value="${h(company.address)}"></div>
     <div class="field"><label>Банк</label><input name="bank_name" value="${h(company.bank_name)}"></div><div class="field"><label>БИК</label><input name="bik" value="${h(company.bik)}"></div>
     <div class="field"><label>Расчётный счёт</label><input name="bank_account" value="${h(company.bank_account)}"></div><div class="field"><label>Корреспондентский счёт</label><input name="correspondent_account" value="${h(company.correspondent_account)}"></div>
@@ -231,6 +269,7 @@ async function render() {
     if (r.name === 'leads') return leadsView(r.query);
     if (r.name === 'price-tags') return priceTagsView();
     if (r.name === 'settings') return settingsView();
+    if (r.name === 'documents') return documentsView();
     const names = {sales:'Продажи',analytics:'Аналитика',valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты'};
     return placeholderView(names[r.name] || 'Раздел');
   } catch (e) {
@@ -311,6 +350,13 @@ document.addEventListener('click', async (event) => {
 addEventListener('hashchange', render);
 addEventListener('online', render);
 addEventListener('offline', render);
+
+addEventListener('message',async event=>{
+  if(event.origin!==location.origin||event.data?.type!=='TITAN_DOCUMENTS_SAVE')return;
+  const frame=document.querySelector('.documents-frame');if(!frame||event.source!==frame.contentWindow)return;
+  try{const value=await saveDocumentRecord(event.data.store,event.data.value);event.source.postMessage({type:'TITAN_DOCUMENTS_SAVE_RESULT',request_id:event.data.request_id,value},location.origin);toast('Данные документа сохранены');}
+  catch(error){event.source.postMessage({type:'TITAN_DOCUMENTS_SAVE_RESULT',request_id:event.data.request_id,error:errorMessage(error)},location.origin);}
+});
 
 if (Config.apiUrl && AppState.get('session')) await Auth.restore();
 render();

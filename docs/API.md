@@ -33,6 +33,9 @@
 - Tasks: `task.list`, `task.create`, `task.update`.
 - Dashboard: `dashboard.stats`.
 - Settings: `settings.get`, `settings.update` — только с действующей сессией.
+- Counterparties: `counterparty.list`, `counterparty.create`, `counterparty.update`.
+- Deals: `deal.list`, `deal.create`, `deal.update`.
+- Templates: `template.list` — закрытые DOCX из Google Drive, только с действующей сессией.
 
 ## Клиент
 

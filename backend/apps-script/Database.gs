@@ -58,8 +58,13 @@ function listRecords(name) {
 
 function appendRecord(name, data) {
   var ctx = sheetContext(name);
-  ctx.sheet.appendRow(ctx.headers.map(function (header) { return data[header] === undefined ? '' : data[header]; }));
+  ctx.sheet.appendRow(ctx.headers.map(function (header) { return data[header] === undefined ? '' : safeCellValue(data[header]); }));
   return data;
+}
+
+function safeCellValue(value) {
+  if (typeof value === 'string' && /^[=+\-@]/.test(value)) return "'" + value;
+  return value;
 }
 
 function findRecord(name, idField, id) {
@@ -81,7 +86,7 @@ function updateRecord(name, idField, id, changes) {
     var current = ctx.sheet.getRange(rowNumber, 1, 1, ctx.headers.length).getValues()[0];
     Object.keys(changes || {}).forEach(function (key) {
       var index = ctx.headers.indexOf(key);
-      if (index >= 0 && changes[key] !== undefined) current[index] = changes[key];
+      if (index >= 0 && changes[key] !== undefined) current[index] = safeCellValue(changes[key]);
     });
     ctx.sheet.getRange(rowNumber, 1, 1, ctx.headers.length).setValues([current]);
     var result = {}; ctx.headers.forEach(function (header, index) { result[header] = current[index]; });

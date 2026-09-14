@@ -3,6 +3,7 @@ var COMPANY_SETTING_KEYS = {
   ogrn: 'company_ogrn',
   inn: 'company_inn',
   kpp: 'company_kpp',
+  director: 'company_director',
   address: 'company_address',
   phone: 'company_phone',
   bank_name: 'company_bank_name',

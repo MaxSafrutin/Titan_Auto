@@ -48,6 +48,17 @@ export const TitanAPI = Object.freeze({
     get: () => request('settings.get'),
     update: (company) => request('settings.update', { company }),
   },
+  counterparties: {
+    list: (filters = {}) => request('counterparty.list', filters),
+    create: (data) => request('counterparty.create', data),
+    update: (id, data) => request('counterparty.update', { counterparty_id: id, data }),
+  },
+  deals: {
+    list: (filters = {}) => request('deal.list', filters),
+    create: (data) => request('deal.create', data),
+    update: (id, data) => request('deal.update', { deal_id: id, data }),
+  },
+  templates: { list: (includeContent = false) => request('template.list', { include_content: includeContent }) },
   vehicles: {
     list: (filters = {}) => request('vehicle.list', filters),
     publicList: (filters = {}) => request('vehicle.publicList', filters),
