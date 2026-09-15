@@ -203,7 +203,7 @@ async function vehicleView(id) {
   const metrics = [['Цена продавца',v.seller_price],['Рыночная',v.market_price],['Выкуп',v.buyout_price],['Цена продажи',v.sale_price],['Вложения',v.estimated_investments],['Комиссия',v.commission]].map(([k,val]) => `<div class="metric"><span class="muted">${k}</span><strong>${fmtMoney(val)}</strong></div>`).join('');
   const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(v.status)}</span><span class="muted">${h(v.public_status || 'private')}</span></div><h2 style="margin-top:22px">${h(title)}</h2><p class="muted">${h([v.year, v.engine_volume, v.transmission, v.mileage ? `${Number(v.mileage).toLocaleString('ru-RU')} км` : ''].filter(Boolean).join(' · '))}</p><div class="grid stats">${metrics}</div></section><section class="card"><h2>Контакт</h2><p><b>${h(v.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(v.seller_phone || 'Телефон не указан')}</span></p><p class="muted">${h(v.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(v.seller_phone)}">Позвонить</a><button class="btn" data-action="new-contact">Новый контакт</button><button class="btn" data-action="new-valuation">Оценить</button></div></section></div>
   <div class="grid two" style="margin-top:18px"><section class="card"><h2>История контактов</h2>${timeline((data.contacts||[]).map(x=>({...x,title:x.result||x.type,next_action_at:x.created_at})))}</section><section class="card"><h2>Оценки</h2>${(data.valuations||[]).length ? timeline(data.valuations.map(x=>({title:`Рынок ${fmtMoney(x.market_price)} · Выкуп ${fmtMoney(x.buyout_price)}`,due_at:x.created_at}))) : '<div class="empty">Оценок пока нет</div>'}</section><section class="card"><h2>Файлы</h2>${fileList(data.files)}</section><section class="card"><h2>История изменений</h2>${(data.audit||[]).length ? timeline(data.audit.map(x=>({title:`${x.field}: ${x.old_value||'—'} → ${x.new_value||'—'}`,due_at:x.created_at}))) : '<div class="empty">Изменений пока нет</div>'}</section></div>`;
-  const actions = '<button class="btn" data-action="edit-vehicle">Изменить</button><button class="btn" data-action="open-price-tag">Ценник</button><button class="btn" data-action="upload-file">Загрузить файл</button><button class="btn primary" data-action="mark-sold">Продано</button>';
+  const actions = '<button class="btn" data-action="edit-vehicle">Изменить</button><button class="btn" data-action="open-price-tag">Ценник</button><button class="btn" data-action="open-stories">Сторис</button><button class="btn" data-action="upload-file">Загрузить файл</button><button class="btn primary" data-action="mark-sold">Продано</button>';
   root.innerHTML = shell(page(v.vehicle_id, title, body, actions));
 }
 
@@ -298,11 +298,23 @@ async function photosView() {
   root.innerHTML = shell(page('Фото', 'Фотоматериалы по автомобилям в едином Drive-архиве', body));
 }
 
-async function storiesView() {
+async function storiesView(vehicleId = '') {
+  if (vehicleId) {
+    const [data,settings,files] = await Promise.all([TitanAPI.vehicles.get(vehicleId),TitanAPI.settings.get(),TitanAPI.files.list(vehicleId)]);
+    const vehicle=data.vehicle,company=settings.company||{},title=[vehicle.brand,vehicle.model,vehicle.year].filter(Boolean).join(' ');
+    AppState.set('currentVehicle',vehicle);
+    const stored=(files||[]).filter(file=>file.type==='stories');
+    const body=`<div class="story-context card"><div><span class="badge ${vehicle.public_status==='published'?'success':''}">${vehicle.public_status==='published'?'Опубликован':'Не опубликован'}</span><b>${h(title)}</b><span class="muted">${h(vehicle.vehicle_id)} · сохранено файлов: ${stored.length}</span></div><div class="actions"><a class="btn" href="#/vehicles/${h(vehicle.vehicle_id)}">Карточка авто</a>${stored.length?`<button class="btn" data-action="show-story-files">Файлы на Drive</button>`:''}</div></div><div class="story-files" hidden>${fileList(stored)}</div><div class="tool-frame-wrap stories-frame-wrap"><iframe class="tool-frame stories-frame" title="Редактор сторис" src="src/modules/stories/legacy/index.html?embedded=1"></iframe></div>`;
+    root.innerHTML=shell(page('Редактор сторис',`${vehicle.vehicle_id} · все функции исходного генератора`,body,'<a class="btn" href="#/stories">← Все автомобили</a>'));
+    const frame=document.querySelector('.stories-frame');
+    frame.addEventListener('load',()=>frame.contentWindow.postMessage({type:'TITAN_STORIES_LOAD',vehicle,company},location.origin),{once:true});
+    return;
+  }
   const snapshot = await TitanAPI.workspace.snapshot();
-  const vehicles = (snapshot.vehicles || []).filter(v => v.public_status === 'published' && !['sold','archived'].includes(v.status));
-  const body = vehicles.length ? `<div class="grid two">${vehicles.map(v => { const title=[v.brand,v.model,v.year].filter(Boolean).join(' '); const details=[v.mileage?`${Number(v.mileage).toLocaleString('ru-RU')} км`:'',v.transmission].filter(Boolean).join(' · '); return `<article class="card"><div class="vehicle-title"><span class="badge success">Опубликован</span><span class="muted">${h(v.vehicle_id)}</span></div><h2 style="margin-top:18px">${h(title)}</h2><textarea readonly rows="6">${h(`${title}\n${details}\nЦена: ${fmtMoney(v.sale_price)}\nПодробности — TITAN AUTO`)}</textarea><div class="actions"><button class="btn" data-action="copy-story">Копировать текст</button><button class="btn primary" data-action="upload-for" data-file-type="stories" data-vehicle-id="${h(v.vehicle_id)}">Загрузить сторис</button></div></article>`; }).join('')}</div>` : '<div class="card empty">Опубликуйте автомобиль, чтобы подготовить материал для сторис.</div>';
-  root.innerHTML = shell(page('Сторис', 'Готовые тексты и файлы для опубликованных автомобилей', body));
+  const vehicles = (snapshot.vehicles || []).sort((a,b)=>Number(['sold','archived'].includes(a.status))-Number(['sold','archived'].includes(b.status))||String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
+  const status={new:'Новый',in_work:'В работе',in_stock:'В наличии',reserved:'Резерв',sold:'Продан',archived:'Архив'};
+  const body = vehicles.length ? `<div class="table-wrap story-registry"><table><thead><tr><th>Автомобиль</th><th>Статус</th><th>Публикация</th><th>Цена</th><th>Сторис</th></tr></thead><tbody>${vehicles.map(v=>`<tr data-story-vehicle="${h(v.vehicle_id)}"><td><b>${h([v.brand,v.model,v.year].filter(Boolean).join(' '))}</b><div class="muted">${h(v.vehicle_id)}${v.mileage?` · ${Number(v.mileage).toLocaleString('ru-RU')} км`:''}</div></td><td><span class="badge ${v.status==='in_stock'?'success':''}">${h(status[v.status]||v.status||'Новый')}</span></td><td>${v.public_status==='published'?'<span class="badge success">Опубликован</span>':'<span class="muted">Скрыт</span>'}</td><td><b>${fmtMoney(v.sale_price||v.market_price||v.seller_price)}</b></td><td><button class="btn primary" data-story-vehicle="${h(v.vehicle_id)}">Открыть редактор</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="card empty">Сначала создайте автомобиль — он сразу появится в реестре сторис.</div>';
+  root.innerHTML = shell(page('Сторис', 'Все автомобили: выберите строку и продолжите работу в полном редакторе', body));
 }
 
 function paymentsView() {
@@ -403,7 +415,7 @@ async function render() {
     if (r.name === 'valuation') return valuationsView();
     if (r.name === 'calls') return callsView();
     if (r.name === 'price-tags') return priceTagsView();
-    if (r.name === 'stories') return storiesView();
+    if (r.name === 'stories') return storiesView(r.id);
     if (r.name === 'photos') return photosView();
     if (r.name === 'payments') return paymentsView();
     if (r.name === 'settings') return settingsView();
@@ -416,6 +428,8 @@ async function render() {
 }
 
 document.addEventListener('click', async (event) => {
+  const storyVehicleId=event.target.closest('[data-story-vehicle]')?.dataset.storyVehicle;
+  if(storyVehicleId){navigate(`stories/${storyVehicleId}`);return render();}
   const priceTagVehicleId=event.target.closest('[data-price-tag-vehicle]')?.dataset.priceTagVehicle;
   if(priceTagVehicleId){
     try { const data=await TitanAPI.vehicles.get(priceTagVehicleId); AppState.set('currentVehicle',data.vehicle); return render(); }
@@ -440,12 +454,14 @@ document.addEventListener('click', async (event) => {
     const text=event.target.closest('.card')?.querySelector('textarea')?.value||'';
     try { await navigator.clipboard.writeText(text); return toast('Текст скопирован'); } catch { return toast('Не удалось скопировать текст','error'); }
   }
+  if (action === 'show-story-files') { const panel=document.querySelector('.story-files'); if(panel) panel.hidden=!panel.hidden; return; }
   if (action === 'upload-file') return uploadForm();
   if (action === 'new-sale') {
     try { const vehicles = (await TitanAPI.vehicles.list({ include_archived: true })).filter(v => !['sold','archived'].includes(v.status)); return saleForm(vehicles[0] || {}, vehicles); }
     catch(e) { return toast(errorMessage(e),'error'); }
   }
   if (action === 'open-price-tag') { navigate('price-tags'); return render(); }
+  if (action === 'open-stories') { const vehicle=AppState.get('currentVehicle'); if(vehicle) navigate(`stories/${vehicle.vehicle_id}`); return render(); }
   if (action === 'change-price-tag-vehicle') { AppState.set('currentVehicle', null); return render(); }
   if (action === 'retry') return render();
   if (action === 'logout') { await Auth.logout(); navigate('dashboard'); return render(); }
@@ -520,7 +536,19 @@ addEventListener('online', render);
 addEventListener('offline', render);
 
 addEventListener('message',async event=>{
-  if(event.origin!==location.origin||event.data?.type!=='TITAN_DOCUMENTS_SAVE')return;
+  if(event.origin!==location.origin)return;
+  if(event.data?.type==='TITAN_STORY_UPLOAD'){
+    const frame=document.querySelector('.stories-frame');if(!frame||event.source!==frame.contentWindow)return;
+    const message=event.data,file=message.file||{};
+    try{
+      if(!file.dataUrl||!file.filename)throw new Error('Редактор не передал файл.');
+      const comma=String(file.dataUrl).indexOf(','),approximateBytes=Math.ceil((String(file.dataUrl).length-comma-1)*3/4);if(approximateBytes>8*1024*1024)throw new Error(`Файл ${file.filename} больше 8 МБ.`);
+      const saved=await TitanAPI.files.upload({vehicle_id:message.vehicleId,type:'stories',description:message.description||'Материал из редактора сторис',filename:file.filename,mime_type:file.mimeType||'application/octet-stream',data_url:file.dataUrl});
+      event.source.postMessage({type:'TITAN_STORY_UPLOAD_RESULT',requestId:message.requestId,ok:true,file:saved},location.origin);
+    }catch(error){event.source.postMessage({type:'TITAN_STORY_UPLOAD_RESULT',requestId:message.requestId,ok:false,error:errorMessage(error)},location.origin)}
+    return;
+  }
+  if(event.data?.type!=='TITAN_DOCUMENTS_SAVE')return;
   const frame=document.querySelector('.documents-frame');if(!frame||event.source!==frame.contentWindow)return;
   try{const value=await saveDocumentRecord(event.data.store,event.data.value);event.source.postMessage({type:'TITAN_DOCUMENTS_SAVE_RESULT',request_id:event.data.request_id,value},location.origin);toast('Данные документа сохранены');}
   catch(error){event.source.postMessage({type:'TITAN_DOCUMENTS_SAVE_RESULT',request_id:event.data.request_id,error:errorMessage(error)},location.origin);}
