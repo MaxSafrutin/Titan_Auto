@@ -13,36 +13,57 @@ export class TitanApiError extends Error {
   }
 }
 
+async function fetchEnvelope(action, payload, timeoutMs) {
+  const controller = new AbortController();
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new TitanApiError('TIMEOUT', 'Сервис отвечает слишком долго. Повторите попытку.'));
+    }, timeoutMs);
+  });
+  try {
+    const response = await Promise.race([
+      fetch(Config.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, payload, session: AppState.get('session'), origin: location.origin }),
+        signal: controller.signal,
+        redirect: 'follow',
+        cache: 'no-store',
+      }),
+      timeout,
+    ]);
+    if (!response.ok) throw new TitanApiError('NETWORK_ERROR', 'Сервис временно недоступен. Повторите попытку.');
+    return await Promise.race([response.json(), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function request(action, payload = {}) {
   if (!Config.apiUrl) throw new TitanApiError('API_NOT_CONFIGURED', 'Сначала подключите Google Apps Script в настройках.');
   if (!navigator.onLine) throw new TitanApiError('OFFLINE', 'Нет подключения к интернету. Введённые данные остались в форме.');
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), Config.requestTimeoutMs);
   const cacheable = READ_ACTIONS.has(action) && action !== 'file.getDownload';
   const cacheKey = cacheable ? `${action}:${JSON.stringify(payload)}:${AppState.get('session')}` : '';
   const cached = cacheable ? responseCache.get(cacheKey) : null;
-  if (cached && Date.now() - cached.time < CACHE_TTL_MS) { clearTimeout(timer); return cached.value; }
+  if (cached && Date.now() - cached.time < CACHE_TTL_MS) return cached.value;
   if (!cacheable) responseCache.clear();
-  try {
-    const response = await fetch(Config.apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, payload, session: AppState.get('session'), origin: location.origin }),
-      signal: controller.signal,
-      redirect: 'follow',
-    });
-    if (!response.ok) throw new TitanApiError('NETWORK_ERROR', 'Сервис временно недоступен. Повторите попытку.');
-    const envelope = await response.json();
-    if (!envelope.ok) throw new TitanApiError(envelope.error?.code, envelope.error?.message);
-    if (cacheable) responseCache.set(cacheKey, { time: Date.now(), value: envelope.data });
-    return envelope.data;
-  } catch (error) {
-    if (error.name === 'AbortError') throw new TitanApiError('TIMEOUT', 'Сервис отвечает слишком долго. Повторите попытку.');
-    if (error instanceof TitanApiError) throw error;
-    console.error('TitanAPI request failed', action, error);
-    throw new TitanApiError('NETWORK_ERROR', 'Не удалось связаться с TITAN AUTO. Проверьте интернет.');
-  } finally {
-    clearTimeout(timer);
+  const attempts = cacheable ? 2 : 1;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const envelope = await fetchEnvelope(action, payload, Config.requestTimeoutMs);
+      if (!envelope.ok) throw new TitanApiError(envelope.error?.code, envelope.error?.message);
+      if (cacheable) responseCache.set(cacheKey, { time: Date.now(), value: envelope.data });
+      return envelope.data;
+    } catch (error) {
+      const retryable = error instanceof TypeError || ['AbortError','TIMEOUT','NETWORK_ERROR'].includes(error?.name) || ['TIMEOUT','NETWORK_ERROR'].includes(error?.code);
+      if (attempt + 1 < attempts && retryable) continue;
+      if (error?.name === 'AbortError') throw new TitanApiError('TIMEOUT', 'Сервис отвечает слишком долго. Повторите попытку.');
+      if (error instanceof TitanApiError) throw error;
+      console.error('TitanAPI request failed', action, error);
+      throw new TitanApiError('NETWORK_ERROR', 'Не удалось связаться с TITAN AUTO. Проверьте интернет.');
+    }
   }
 }
 

@@ -273,9 +273,19 @@ function fileList(items = []) {
 
 async function catalogView() {
   root.innerHTML = `<main class="page public-catalog"><div class="page-head"><a class="brand" href="#/catalog"><img src="assets/brand/titan-auto-logo.svg" alt="TITAN AUTO"></a><a class="btn" href="#/dashboard">Вход для сотрудников</a></div><div class="loading-card"><i></i><b>Загружаем публичный склад…</b></div></main>`;
+  const cacheKey = 'titan.publicCatalog';
   let rows = [];
   let warning = '';
-  try { rows = await TitanAPI.vehicles.publicList(); } catch (e) { warning = `<div class="notice">${h(errorMessage(e))}</div>`; }
+  try {
+    rows = await TitanAPI.vehicles.publicList();
+    localStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), rows }));
+  } catch (e) {
+    const cached = (() => { try { return JSON.parse(localStorage.getItem(cacheKey) || 'null'); } catch { return null; } })();
+    if (cached?.rows?.length) {
+      rows = cached.rows;
+      warning = `<div class="notice">Показана последняя загруженная версия склада. Обновление временно недоступно.</div>`;
+    } else warning = `<div class="notice">${h(errorMessage(e))}</div>`;
+  }
   const available = rows.filter(v => v.stock_type === 'in_stock').length;
   const virtual = rows.length - available;
   root.innerHTML = `<main class="page public-catalog"><div class="page-head"><a class="brand" href="#/catalog"><img src="assets/brand/titan-auto-logo.svg" alt="TITAN AUTO"></a><a class="btn" href="#/dashboard">Вход для сотрудников</a></div><div class="eyebrow">ТИТАН АВТО · САМАРА</div><h1>Публичный склад</h1><p class="muted">Автомобили в наличии и виртуальный склад проверенных предложений.</p><div class="actions catalog-summary"><span class="badge success">В наличии: ${available}</span><span class="badge">Виртуальный склад: ${virtual}</span></div>${warning}<div class="grid catalog-grid" style="margin-top:28px">${rows.length ? rows.map(v => `<a class="card catalog-card" href="#/catalog/${h(v.vehicle_id)}"><div class="catalog-media">${v.cover_url ? `<img src="${h(v.cover_url)}" alt="${h(v.brand+' '+v.model)}">` : '<span>Фото добавляется</span>'}</div><div class="catalog-body"><div class="vehicle-title"><span class="badge ${v.stock_type==='in_stock'?'success':''}">${v.stock_type==='in_stock'?'В наличии':'Виртуальный склад'}</span><span class="muted">${h(v.vehicle_id)}</span></div><div class="eyebrow" style="margin-top:18px">${h(v.year || '')}</div><h2>${h([v.brand,v.model].filter(Boolean).join(' '))}</h2><p class="muted">${h([v.mileage ? `${Number(v.mileage).toLocaleString('ru-RU')} км` : '',v.transmission,v.engine_volume ? `${v.engine_volume} л` : ''].filter(Boolean).join(' · '))}</p><strong class="catalog-price">${fmtMoney(v.sale_price)}</strong><span class="catalog-more">Подробнее →</span></div></a>`).join('') : '<div class="card empty"><h2>Склад готов к публикации</h2><p>В кабинете сотрудника откройте автомобиль и нажмите «Опубликовать на складе».</p></div>'}</div></main>`;
