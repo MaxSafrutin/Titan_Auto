@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>Титан Авто — расчёт выплат</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">T</div>
+        <div><strong>TITAN AUTO</strong><span>Расчёт выплат</span></div>
+      </div>
+      <nav class="nav" aria-label="Основная навигация">
+        <button class="nav-item active" data-view="dashboard"><span>⌁</span>Обзор</button>
+        <button class="nav-item" data-view="deals"><span>▤</span>Сделки</button>
+        <button class="nav-item" data-view="months"><span>▦</span>По месяцам</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span>Настройки</button>
+      </nav>
+      <div class="sidebar-footer"><span class="status-dot"></span>Данные сохранены на устройстве</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Открыть меню">☰</button>
+        <div>
+          <p class="eyebrow" id="pageEyebrow">ФИНАНСЫ</p>
+          <h1 id="pageTitle">Обзор</h1>
+        </div>
+        <button class="primary-btn" id="newDealBtn"><span>＋</span> Новая сделка</button>
+      </header>
+
+      <section class="view active" id="dashboardView">
+        <div class="period-row">
+          <div><h2>Финансовый результат</h2><p>План и факт по всем автомобилям</p></div>
+          <select id="dashboardPeriod" class="compact-select" aria-label="Период"></select>
+        </div>
+        <div class="stats-grid">
+          <article class="stat-card accent"><div class="stat-label">К выплате за месяц <span>↗</span></div><strong id="statPay">0 ₽</strong><p id="statPayHint">С учётом оклада</p></article>
+          <article class="stat-card"><div class="stat-label">Мой заработок со сделок</div><strong id="statDeals">0 ₽</strong><p id="statDealsHint">0 реализовано</p></article>
+          <article class="stat-card"><div class="stat-label">Оклад</div><strong id="statSalary">0 ₽</strong><p id="statSalaryHint">Не настроен</p></article>
+          <article class="stat-card"><div class="stat-label">В работе</div><strong id="statPipeline">0 ₽</strong><p id="statPipelineHint">0 автомобилей</p></article>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel chart-panel">
+            <div class="panel-head"><div><h3>Динамика заработка</h3><p>Последние 6 месяцев</p></div><span class="legend"><i></i>К выплате</span></div>
+            <div class="chart" id="earningsChart"></div>
+          </article>
+          <article class="panel month-panel">
+            <div class="panel-head"><div><h3>Расчёт месяца</h3><p id="monthCalcLabel">—</p></div></div>
+            <div id="monthBreakdown" class="breakdown"></div>
+          </article>
+        </div>
+        <article class="panel recent-panel">
+          <div class="panel-head"><div><h3>Последние сделки</h3><p>Свежие расчёты и реализации</p></div><button class="text-btn" data-go="deals">Все сделки →</button></div>
+          <div id="recentDeals"></div>
+        </article>
+        <article class="panel team-panel">
+          <div class="panel-head"><div><h3>Польза и заработок команды</h3><p>Кто сколько заработал себе и принёс директору</p></div></div>
+          <div id="teamEarnings"></div>
+        </article>
+      </section>
+
+      <section class="view" id="dealsView">
+        <div class="section-tools">
+          <div class="search-box"><span>⌕</span><input id="dealSearch" placeholder="Автомобиль, продавец или комментарий" /></div>
+          <select id="statusFilter" class="compact-select"><option value="all">Все статусы</option><option value="planned">В работе</option><option value="sold">Реализовано</option></select>
+          <select id="dealMonthFilter" class="compact-select"></select>
+        </div>
+        <article class="panel"><div id="dealsTable"></div></article>
+      </section>
+
+      <section class="view" id="monthsView">
+        <div class="period-row"><div><h2>Выплаты по месяцам</h2><p>Сделки, оклад и итоговая сумма</p></div></div>
+        <div id="monthsGrid" class="months-grid"></div>
+      </section>
+
+      <section class="view" id="settingsView">
+        <div class="settings-grid">
+          <article class="panel settings-card">
+            <div class="panel-head"><div><h3>Ставки по сделкам</h3><p>Можно изменить в любой момент</p></div></div>
+            <div class="settings-fields">
+              <label>Комиссия · полный цикл <div class="suffix-input"><input type="number" id="rateCommissionFull" min="0" step="0.5"><span>%</span></div></label>
+              <label>Комиссия · один этап <div class="suffix-input"><input type="number" id="rateCommissionPart" min="0" step="0.5"><span>%</span></div></label>
+              <label>Выкуп · полный цикл <div class="suffix-input"><input type="number" id="rateBuyoutFull" min="0" step="0.5"><span>%</span></div></label>
+              <label>Выкуп · один этап <div class="suffix-input"><input type="number" id="rateBuyoutPart" min="0" step="0.5"><span>%</span></div></label>
+              <label>От комиссии по кредиту <div class="suffix-input"><input type="number" id="rateCredit" min="0" step="0.5"><span>%</span></div></label>
+            </div>
+            <button class="primary-btn wide" id="saveRatesBtn">Сохранить ставки</button>
+          </article>
+          <article class="panel settings-card">
+            <div class="panel-head"><div><h3>Оклад по умолчанию</h3><p>Подставляется при создании нового месяца</p></div></div>
+            <label class="standalone-label">Сумма оклада<div class="suffix-input money"><input type="number" id="defaultSalary" min="0" step="1000"><span>₽</span></div></label>
+            <label class="standalone-label">Моё имя<input class="name-input" id="ownManagerName" placeholder="Например, Максим"></label>
+            <p class="settings-note compact-note">Имя «Я» в участниках автоматически считается вашим.</p>
+            <p class="settings-note">Оклад каждого месяца можно отдельно изменить, включить или выключить и отметить как поглощаемый.</p>
+            <button class="secondary-btn wide" id="saveSalaryBtn">Сохранить оклад и имя</button>
+          </article>
+          <article class="panel settings-card data-card">
+            <div class="panel-head"><div><h3>Резервная копия</h3><p>Перенос данных между устройствами</p></div></div>
+            <div class="data-actions"><button class="secondary-btn" id="exportBtn">Экспорт JSON</button><label class="secondary-btn file-btn">Импорт JSON<input type="file" id="importInput" accept="application/json"></label></div>
+            <button class="danger-link" id="clearDataBtn">Удалить все данные</button>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="dealDialog" class="modal">
+    <form method="dialog" id="dealForm">
+      <div class="modal-head"><div><p class="eyebrow">РАСЧЁТ АВТОМОБИЛЯ</p><h2 id="dealModalTitle">Новая сделка</h2></div><button type="button" class="icon-btn" data-close>×</button></div>
+      <input type="hidden" id="dealId">
+      <div class="form-grid">
+        <label>Автомобиль<input id="carName" required placeholder="Например, Nissan Juke"></label>
+        <label>Год выпуска<input type="number" id="carYear" min="1900" max="2100" step="1" placeholder="2013"></label>
+        <label>Статус<select id="dealStatus"><option value="planned">В работе / просчёт</option><option value="sold">Реализовано</option></select></label>
+        <label>Дата реализации<input type="date" id="dealDate"></label>
+        <label>Тип сделки<select id="dealType"><option value="commission">Комиссия</option><option value="buyout">Выкуп</option></select></label>
+        <label>Распределение<select id="allocationMode"><option value="stages">По участникам этапов</option><option value="equal">Поровну вручную</option></select></label>
+        <div class="manager-picker-head span-2">
+          <span>Участники сделки</span>
+          <button type="button" class="add-manager-btn" id="showAddManagerBtn">＋ Добавить участника</button>
+        </div>
+        <div class="new-manager-row span-2" id="newManagerRow">
+          <input id="newManagerName" placeholder="Имя нового участника">
+          <button type="button" class="secondary-btn" id="addManagerBtn">Добавить</button>
+          <button type="button" class="icon-mini" id="cancelAddManagerBtn" aria-label="Отменить добавление">×</button>
+        </div>
+        <div class="participant-field span-2"><span>Участники выкупа / приёмки</span><div class="participant-options" id="acceptedByOptions"></div></div>
+        <div class="participant-field span-2"><span>Участники продажи</span><div class="participant-options" id="soldByOptions"></div></div>
+        <div class="participant-field span-2 equal-participants" id="equalParticipantsWrap"><span>Кому разделить вознаграждение поровну</span><div class="participant-options" id="equalParticipantsOptions"></div></div>
+        <label>Цена на Авито<div class="suffix-input money"><input type="number" id="avitoPrice" min="0" step="1000" value="0"><span>₽</span></div></label>
+        <label>Итоговая цена продажи<div class="suffix-input money"><input type="number" id="salePrice" min="0" step="1000" value="0"><span>₽</span></div></label>
+        <label>На руки собственнику<div class="suffix-input money"><input type="number" id="ownerAmount" min="0" step="1000" value="0"><span>₽</span></div></label>
+        <label>Дней на Авито<input type="number" id="avitoDays" min="0" step="1" value="0"></label>
+        <label class="span-2">Ответственный<input id="dealResponsible" placeholder="Например, БС"></label>
+        <label>Маржа с автомобиля<div class="suffix-input money"><input type="number" id="carMargin" min="0" step="1000" value="0"><span>₽</span></div></label>
+        <label>Комиссия за выдачу кредита<div class="suffix-input money"><input type="number" id="creditCommission" min="0" step="1000" value="0"><span>₽</span></div></label>
+        <p class="auto-margin-note span-2" id="marginAutoHint">Маржа автоматически считается как цена продажи минус сумма собственнику. При необходимости её можно исправить вручную.</p>
+        <label class="span-2">Комментарий<textarea id="dealNote" rows="2" placeholder="Необязательно"></textarea></label>
+      </div>
+      <div class="live-calc">
+        <div><span>Общая ставка</span><strong id="liveRate">30%</strong></div><div><span>Фонд с маржи</span><strong id="liveCarPay">0 ₽</strong></div><div><span>Фонд с кредита</span><strong id="liveCreditPay">0 ₽</strong></div><div class="live-total"><span>Мой заработок</span><strong id="liveTotal">0 ₽</strong></div>
+      </div>
+      <div id="allocationPreview" class="allocation-preview"></div>
+      <section class="director-card">
+        <div class="director-head"><div><strong>Доход директора</strong><span>Чистыми, до налога и в сравнении с вкладом</span></div><label class="director-switch"><input type="checkbox" id="directorEnabled" checked><span>Считать</span></label></div>
+        <div id="directorControls">
+          <div class="director-inputs">
+            <label>Вложено директором<div class="suffix-input money"><input type="number" id="directorCapital" min="0" step="1000" value="0"><span>₽</span></div></label>
+            <label>Дней в обороте<input type="number" id="directorDays" min="1" step="1" value="1"></label>
+            <label>Прочие расходы<div class="suffix-input money"><input type="number" id="directorExpenses" min="0" step="1000" value="0"><span>₽</span></div></label>
+            <label>УСН<div class="suffix-input"><input type="number" id="directorTaxRate" min="0" step="0.5" value="15"><span>%</span></div></label>
+            <label>Ставка вклада<div class="suffix-input"><input type="number" id="bankRate" min="0" step="0.5" value="17"><span>%</span></div></label>
+            <label>Инфляция<div class="suffix-input"><input type="number" id="inflationRate" min="0" step="0.1" value="5.2"><span>%</span></div></label>
+          </div>
+          <div class="director-checks">
+            <label><input type="checkbox" id="directorSubtractManagers" checked><span>Вычесть заработок менеджеров</span></label>
+            <label><input type="checkbox" id="directorTaxEnabled" checked><span>Учитывать УСН в чистой прибыли</span></label>
+          </div>
+          <div id="directorPreview" class="director-preview"></div>
+          <p class="director-note">Расчёт управленческий: ставка УСН и допустимые расходы зависят от фактического налогового режима и документов.</p>
+        </div>
+      </section>
+      <section class="settlement-card">
+        <div class="settlement-head"><div><strong>Фактические расчёты</strong><span>Что рассчитано и сколько реально получено или выдано</span></div><button type="button" class="settlement-fill-btn" id="settlementFillCalculatedBtn">Заполнить по расчёту</button></div>
+        <div class="settlement-incoming">
+          <label><span>От покупателя по расчёту</span><b id="settlementBuyerDue">0 ₽</b></label>
+          <label>Фактически получено от покупателя<div class="suffix-input money"><input type="number" id="settlementBuyerReceived" min="0" step="1000" value="0"><span>₽</span></div></label>
+        </div>
+        <div class="settlement-table-head"><span>Кому</span><span>По расчёту</span><span>Выдано / получено</span><span>Остаток</span></div>
+        <div id="settlementRows" class="settlement-rows"></div>
+        <div id="settlementSummary" class="settlement-summary"></div>
+        <p class="settlement-note">Положительный остаток означает, что человеку ещё должны выдать. Отрицательный — он получил больше расчёта и должен вернуть разницу.</p>
+      </section>
+      <div class="modal-actions"><button type="button" class="copy-message-btn" id="copyCurrentDealBtn">▣ Копировать сообщение</button><button type="button" class="secondary-btn" data-close>Отмена</button><button type="submit" class="primary-btn">Сохранить сделку</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="monthDialog" class="modal small-modal">
+    <form method="dialog" id="monthForm">
+      <div class="modal-head"><div><p class="eyebrow">НАСТРОЙКА ВЫПЛАТЫ</p><h2 id="monthModalTitle">Месяц</h2></div><button type="button" class="icon-btn" data-close>×</button></div>
+      <input type="hidden" id="monthKey">
+      <label class="standalone-label">Оклад за месяц<div class="suffix-input money"><input type="number" id="monthSalary" min="0" step="1000"><span>₽</span></div></label>
+      <label class="check-row"><input type="checkbox" id="salaryEnabled"><span><strong>Учитывать оклад</strong><small>Добавить оклад в расчёт месяца</small></span></label>
+      <label class="check-row"><input type="checkbox" id="salaryAbsorbed"><span><strong>Оклад поглощается</strong><small>К выплате будет большая из сумм: оклад или сделки</small></span></label>
+      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Отмена</button><button type="submit" class="primary-btn">Сохранить</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

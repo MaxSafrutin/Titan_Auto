@@ -334,9 +334,19 @@ async function storiesView(vehicleId = '') {
   root.innerHTML = shell(page('Сторис', 'Все автомобили: выберите строку и продолжите работу в полном редакторе', body));
 }
 
-function paymentsView() {
-  const body = `<div class="grid two"><section class="card accent"><h2>Расчёт платежа</h2><form class="form-grid" data-form="payment-calculator"><div class="field"><label>Цена автомобиля</label><input name="price" type="number" min="0" value="1000000" required></div><div class="field"><label>Первоначальный взнос</label><input name="down_payment" type="number" min="0" value="200000"></div><div class="field"><label>Срок, месяцев</label><input name="months" type="number" min="1" value="60" required></div><div class="field"><label>Ставка, % годовых</label><input name="annual_rate" type="number" min="0" step="0.1" value="24.9" required></div><div class="wide actions"><button class="btn primary">Рассчитать</button></div></form></section><section class="card" data-payment-result><h2>Результат</h2><div class="empty">Заполните параметры и нажмите «Рассчитать».</div></section></div>`;
-  root.innerHTML = shell(page('Калькулятор оплаты', 'Предварительный аннуитетный расчёт для консультации клиента', body));
+async function paymentsView() {
+  const [snapshot, settings] = await Promise.all([TitanAPI.workspace.snapshot(), TitanAPI.settings.get()]);
+  const vehicles = snapshot.vehicles || [];
+  const sales = snapshot.sales || [];
+  const body = `<div class="story-context card"><div><span class="badge success">Общая база</span><b>${sales.length} ${sales.length === 1 ? 'сделка' : 'сделок'}</b><span class="muted">${vehicles.length} авто · выплаты, фактические расчёты и аналитика</span></div><div class="actions"><a class="btn" href="#/sales">Продажи</a><a class="btn" href="#/analytics">Аналитика</a></div></div><div class="tool-frame-wrap payments-frame-wrap"><iframe class="tool-frame payments-frame" title="Калькулятор выплат TITAN AUTO" src="src/modules/payments/legacy/index.html?embedded=1"></iframe></div>`;
+  root.innerHTML = shell(page('Калькулятор оплаты', 'Полный расчёт маржи, вознаграждений, фактических выплат и прибыли директора', body));
+  const frame = document.querySelector('.payments-frame');
+  frame.addEventListener('load', () => frame.contentWindow.postMessage({
+    type: 'TITAN_PAYMENTS_LOAD',
+    sales,
+    vehicles,
+    company: settings.company || {},
+  }, location.origin), { once: true });
 }
 
 async function settingsView() {
