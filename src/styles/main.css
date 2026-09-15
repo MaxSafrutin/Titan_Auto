@@ -104,11 +104,29 @@ textarea { resize: vertical; min-height: 96px; }
 .metric-list b { font-family: Montserrat, Inter, sans-serif; font-size: 20px; text-align: right; }
 .catalog-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
 .catalog-card { overflow: hidden; padding: 0; }
+.catalog-card { color: var(--text); transition: transform .18s ease, border-color .18s ease; }
+.catalog-card:hover { transform: translateY(-3px); border-color: rgba(229,57,53,.55); }
 .catalog-media { aspect-ratio: 16/10; display: grid; place-items: center; background: var(--raised); color: #666; }
+.catalog-media img { width: 100%; height: 100%; object-fit: cover; }
 .catalog-body { padding: 20px; }
 .catalog-summary { margin-top: 20px; }
 .catalog-price { display: block; margin-top: 18px; font-family: Montserrat, Inter, sans-serif; font-size: 26px; }
+.catalog-more { display: block; margin-top: 18px; color: var(--red-bright); font-weight: 800; }
 .public-catalog { padding-top: 24px; }
+.catalog-back { display: inline-block; margin: 10px 0 22px; color: var(--muted); font-weight: 700; }
+.public-vehicle-layout { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(340px,.8fr); gap: 22px; align-items: start; }
+.public-gallery { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.public-gallery img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 16px; background: var(--raised); }
+.public-gallery img.main { grid-column: 1/-1; aspect-ratio: 16/10; }
+.public-placeholder { min-height: 420px; border-radius: var(--radius); }
+.public-offer { position: sticky; top: 22px; }
+.public-offer h1 { margin: 12px 0 0; font-size: clamp(28px,4vw,48px); }
+.public-specs { display: grid; margin-top: 24px; }
+.public-specs > div { display: flex; justify-content: space-between; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.public-specs span { color: var(--muted); }
+.public-specs b { text-align: right; }
+.public-description { white-space: pre-line; line-height: 1.65; }
+.public-contact { display: grid; gap: 12px; margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--border); }
 .loading-card { min-height: 220px; display: grid; place-items: center; align-content: center; gap: 18px; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
 .loading-card i { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--red-bright); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -152,4 +170,7 @@ textarea { resize: vertical; min-height: 96px; }
   .story-context { align-items: stretch; flex-direction: column; }
   .stories-frame { min-height: 900px; }
   .analytics-row { grid-template-columns: 100px 1fr 34px; gap: 9px; }
+  .public-vehicle-layout { grid-template-columns: 1fr; }
+  .public-offer { position: static; }
+  .public-gallery { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }

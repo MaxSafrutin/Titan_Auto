@@ -10,3 +10,21 @@ function saleCreate(payload, session) {
   data.payload_json=JSON.stringify(cleanObject(payload));
   appendRecord('SALES',data); auditChanges(session,'SALE',data.sale_id,'CREATE',{},data); return data;
 }
+
+function saleUpdate(id, changes, session) {
+  var before = findRecord('SALES', 'sale_id', id);
+  if (!before) throw apiError('SALE_NOT_FOUND', 'Продажа не найдена.');
+  var data = cleanObject(changes);
+  delete data.sale_id;
+  delete data.created_at;
+  ['purchase_price','sale_price','owner_amount','commission','credit_commission','expenses','tax','profit','margin','actual_buyer_payment','actual_owner_payment','actual_manager_payment','actual_director_payment'].forEach(function (key) {
+    if (data[key] !== undefined) data[key] = normalizeNumber(data[key]);
+  });
+  var storedPayload = jsonParse(before.payload_json, {});
+  var nextPayload = typeof data.payload_json === 'string' ? jsonParse(data.payload_json, {}) : (data.payload_json || {});
+  delete data.payload_json;
+  data.payload_json = JSON.stringify(Object.assign({}, storedPayload, nextPayload));
+  var after = updateRecord('SALES', 'sale_id', id, data);
+  auditChanges(session, 'SALE', id, 'UPDATE', before, after);
+  return after;
+}

@@ -22,13 +22,13 @@
 
 ## Actions
 
-- Public: `health`, `auth.login`, `vehicle.publicList`.
+- Public: `health`, `auth.login`, `vehicle.publicList`, `vehicle.publicGet`. Публичная карточка содержит только разрешённые поля автомобиля, публичные фото и контакт компании.
 - Auth: `auth.check`, `auth.logout`.
 - Vehicles: `vehicle.list`, `vehicle.get`, `vehicle.create`, `vehicle.update`, `vehicle.archive`, `vehicle.markSold`.
 - Leads: `lead.list`, `lead.get`, `lead.create`, `lead.update`.
 - Contacts: `contact.list`, `contact.create`.
 - Valuations: `valuation.list`, `valuation.create`.
-- Sales: `sale.list`, `sale.create`.
+- Sales: `sale.list`, `sale.create`, `sale.update`. Изменение продажи и расчётов выплат требует действующую сессию и записывается в аудит.
 - Files: `file.list`, `file.upload`, `file.delete`, `file.getDownload`.
 - Tasks: `task.list`, `task.create`, `task.update`.
 - Dashboard: `dashboard.stats`.

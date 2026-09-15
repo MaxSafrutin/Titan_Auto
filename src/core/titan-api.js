@@ -1,7 +1,7 @@
 import { Config } from './config.js';
 import { AppState } from './state.js';
 
-const READ_ACTIONS = new Set(['health','auth.check','dashboard.stats','workspace.snapshot','documents.snapshot','settings.get','counterparty.list','deal.list','template.list','vehicle.list','vehicle.publicList','vehicle.get','lead.list','lead.get','contact.list','valuation.list','sale.list','file.list','file.getDownload','task.list']);
+const READ_ACTIONS = new Set(['health','auth.check','dashboard.stats','workspace.snapshot','documents.snapshot','settings.get','counterparty.list','deal.list','template.list','vehicle.list','vehicle.publicList','vehicle.publicGet','vehicle.get','lead.list','lead.get','contact.list','valuation.list','sale.list','file.list','file.getDownload','task.list']);
 const responseCache = new Map();
 const CACHE_TTL_MS = 20000;
 
@@ -88,6 +88,7 @@ export const TitanAPI = Object.freeze({
   vehicles: {
     list: (filters = {}) => request('vehicle.list', filters),
     publicList: (filters = {}) => request('vehicle.publicList', filters),
+    publicGet: (vehicleId) => request('vehicle.publicGet', { vehicle_id: vehicleId }),
     get: (vehicleId) => request('vehicle.get', { vehicle_id: vehicleId }),
     create: (data) => request('vehicle.create', data),
     update: (vehicleId, data) => request('vehicle.update', { vehicle_id: vehicleId, data }),
@@ -111,6 +112,7 @@ export const TitanAPI = Object.freeze({
   sales: {
     list: (filters = {}) => request('sale.list', filters),
     create: (data) => request('sale.create', data),
+    update: (saleId, data) => request('sale.update', { sale_id: saleId, data }),
   },
   files: {
     list: (vehicleId) => request('file.list', { vehicle_id: vehicleId }),

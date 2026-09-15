@@ -31,6 +31,24 @@ function publicVehicleList(filters) {
   })).map(publicVehicle);
 }
 
+function publicVehicleGet(id) {
+  var row = findRecordLite('VEHICLES', 'vehicle_id', id);
+  if (!row || row.public_status !== 'published' || ['sold','archived'].indexOf(String(row.status)) >= 0) throw apiError('PUBLIC_VEHICLE_NOT_FOUND', 'Автомобиль не опубликован или уже снят с продажи.');
+  var vehicle = publicVehicle(row);
+  vehicle.photos = sortNewest(listRecordsLite('FILES').filter(function (file) {
+    return String(file.vehicle_id) === String(id) && file.type === 'photos' && String(file.description || '').indexOf('[DELETED]') !== 0;
+  })).slice(0, 12).map(function (file) { return 'https://drive.google.com/thumbnail?id=' + file.drive_file_id + '&sz=w1600'; });
+  var company = companySettingsGet().company || {};
+  return { vehicle: vehicle, company: { legal_name: company.legal_name || 'ТИТАН АВТО', phone: company.phone || '', address: company.address || '' } };
+}
+
+function syncPublicPhotoAccess(vehicleId, isPublic) {
+  listRecordsLite('FILES').filter(function (file) { return String(file.vehicle_id) === String(vehicleId) && file.type === 'photos'; }).forEach(function (file) {
+    try { DriveApp.getFileById(file.drive_file_id).setSharing(isPublic ? DriveApp.Access.ANYONE_WITH_LINK : DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW); }
+    catch (error) { console.warn('Не удалось изменить доступ к фото ' + file.drive_file_id + ': ' + error.message); }
+  });
+}
+
 function vehicleGet(id) {
   var vehicle = findRecordLite('VEHICLES', 'vehicle_id', id);
   if (!vehicle) throw apiError('VEHICLE_NOT_FOUND', 'Автомобиль не найден.');
@@ -69,6 +87,7 @@ function vehicleUpdate(id, changes, session) {
   ['year','mileage','engine_volume','engine_power','owners_count','seller_price','market_price','buyout_price','purchase_price','sale_price','estimated_investments','commission'].forEach(function (key) { if (data[key] !== undefined) data[key] = normalizeNumber(data[key]); });
   data.updated_at = nowIso();
   var after = updateRecord('VEHICLES', 'vehicle_id', id, data);
+  if (data.public_status !== undefined && data.public_status !== before.public_status) syncPublicPhotoAccess(id, data.public_status === 'published');
   auditChanges(session, 'VEHICLE', id, 'UPDATE', before, after);
   return after;
 }

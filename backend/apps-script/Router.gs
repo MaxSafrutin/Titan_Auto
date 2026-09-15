@@ -2,6 +2,7 @@ function routeAction(action, payload, token) {
   if (action === 'health') return { service: 'TITAN AUTO API', time: nowIso() };
   if (action === 'auth.login') return login(payload);
   if (action === 'vehicle.publicList') return publicVehicleList(payload);
+  if (action === 'vehicle.publicGet') return publicVehicleGet(payload.vehicle_id);
   var session = requireSession(token);
   if (action === 'auth.check') return { user: session.user };
   if (action === 'auth.logout') return logout(token);
@@ -34,6 +35,7 @@ function routeAction(action, payload, token) {
     'valuation.create': function () { return valuationCreate(payload, session); },
     'sale.list': function () { return saleList(payload); },
     'sale.create': function () { return saleCreate(payload, session); },
+    'sale.update': function () { return saleUpdate(payload.sale_id, payload.data, session); },
     'file.list': function () { return fileList(payload); },
     'file.upload': function () { return fileUpload(payload, session); },
     'file.delete': function () { return fileDelete(payload.file_id, session); },
