@@ -106,7 +106,7 @@ function vehicleMarkSold(payload, session) {
   return { vehicle: vehicle, sale: sale };
 }
 
-function dashboardStats() {
+function dashboardStats(session) {
   var vehicles = listRecordsLite('VEHICLES');
   var leads = listRecordsLite('LEADS');
   var tasks = listRecordsLite('TASKS');
@@ -114,7 +114,7 @@ function dashboardStats() {
   var valuations = listRecordsLite('VALUATIONS');
   var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   var month = today.slice(0, 7);
-  var valued = {};
+  var valued = {}, financialAccess = ['admin','director'].indexOf((session && session.role) || 'admin') >= 0;
   valuations.forEach(function (x) { valued[x.vehicle_id] = true; });
   var activeLead = function (x) { return ['won','lost','archived'].indexOf(String(x.status)) < 0; };
   var upcoming = tasks.filter(function (x) { return x.status !== 'done' && x.due_at; }).concat(leads.filter(function (x) { return activeLead(x) && x.next_contact_at; }).map(function (x) { return { lead_id: x.lead_id, title: 'Связаться: ' + [x.brand,x.model].filter(Boolean).join(' '), due_at: x.next_contact_at }; }));
@@ -126,7 +126,8 @@ function dashboardStats() {
     meetings_upcoming: leads.filter(function (x) { return activeLead(x) && String(x.meet_at) >= today; }).length,
     without_valuation: vehicles.filter(function (x) { return ['sold','archived'].indexOf(x.status) < 0 && !valued[x.vehicle_id]; }).length,
     sold_this_month: sales.filter(function (x) { return String(x.sale_date).slice(0,7) === month; }).length,
-    margin_this_month: sales.filter(function (x) { return String(x.sale_date).slice(0,7) === month; }).reduce(function (sum,x) { return sum + Number(x.profit || x.margin || 0); }, 0),
+    margin_this_month: financialAccess ? sales.filter(function (x) { return String(x.sale_date).slice(0,7) === month; }).reduce(function (sum,x) { return sum + Number(x.profit || x.margin || 0); }, 0) : null,
+    financial_access: financialAccess,
     tasks_today: tasks.filter(function (x) { return x.status !== 'done' && String(x.due_at).slice(0,10) === today; }).length,
     upcoming_actions: upcoming.slice(0, 8),
     recent_vehicles: sortNewest(vehicles).slice(0, 6)

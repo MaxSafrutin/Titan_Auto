@@ -4,14 +4,17 @@ function routeAction(action, payload, token) {
   if (action === 'vehicle.publicList') return publicVehicleList(payload);
   if (action === 'vehicle.publicGet') return publicVehicleGet(payload.vehicle_id);
   var session = requireSession(token);
-  if (action === 'auth.check') return { user: session.user };
+  if (action === 'auth.check') return { user: publicSessionUser(session) };
   if (action === 'auth.logout') return logout(token);
+  authorizeAction(action, session);
   var routes = {
-    'dashboard.stats': function () { return dashboardStats(); },
-    'workspace.snapshot': function () { return workspaceSnapshot(); },
+    'dashboard.stats': function () { return dashboardStats(session); },
+    'workspace.snapshot': function () { return workspaceSnapshot(session); },
     'documents.snapshot': function () { return documentsSnapshot(); },
     'settings.get': function () { return companySettingsGet(); },
     'settings.update': function () { return companySettingsUpdate(payload, session); },
+    'user.list': function () { return staffUserList(session); },
+    'user.upsert': function () { return staffUserUpsert(payload, session); },
     'counterparty.list': function () { return counterpartyList(payload); },
     'counterparty.create': function () { return counterpartyCreate(payload, session); },
     'counterparty.update': function () { return counterpartyUpdate(payload.counterparty_id, payload.data, session); },
@@ -48,11 +51,12 @@ function routeAction(action, payload, token) {
   return routes[action]();
 }
 
-function workspaceSnapshot() {
+function workspaceSnapshot(session) {
+  var financialAccess = ['admin','director'].indexOf((session && session.role) || 'admin') >= 0;
   return {
     vehicles: vehicleList({ include_archived: true }),
     leads: leadList({}),
-    sales: saleList({}),
+    sales: financialAccess ? saleList({}) : [],
     valuations: valuationList({}),
     tasks: taskList({})
   };

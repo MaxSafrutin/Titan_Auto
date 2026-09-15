@@ -1,7 +1,7 @@
 import { Config } from './config.js';
 import { AppState } from './state.js';
 
-const READ_ACTIONS = new Set(['health','auth.check','dashboard.stats','workspace.snapshot','documents.snapshot','settings.get','counterparty.list','deal.list','template.list','vehicle.list','vehicle.publicList','vehicle.publicGet','vehicle.get','lead.list','lead.get','contact.list','valuation.list','sale.list','file.list','file.getDownload','task.list']);
+const READ_ACTIONS = new Set(['health','auth.check','dashboard.stats','workspace.snapshot','documents.snapshot','settings.get','user.list','counterparty.list','deal.list','template.list','vehicle.list','vehicle.publicList','vehicle.publicGet','vehicle.get','lead.list','lead.get','contact.list','valuation.list','sale.list','file.list','file.getDownload','task.list']);
 const responseCache = new Map();
 const CACHE_TTL_MS = 20000;
 
@@ -73,6 +73,10 @@ export const TitanAPI = Object.freeze({
   settings: {
     get: () => request('settings.get'),
     update: (company) => request('settings.update', { company }),
+  },
+  users: {
+    list: () => request('user.list'),
+    upsert: (data) => request('user.upsert', data),
   },
   counterparties: {
     list: (filters = {}) => request('counterparty.list', filters),

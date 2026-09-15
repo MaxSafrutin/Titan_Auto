@@ -127,6 +127,13 @@ textarea { resize: vertical; min-height: 96px; }
 .public-specs b { text-align: right; }
 .public-description { white-space: pre-line; line-height: 1.65; }
 .public-contact { display: grid; gap: 12px; margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--border); }
+.session-user { display: grid; gap: 2px; padding: 12px 14px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.session-user b { font-size: 13px; }
+.session-user span { color: var(--muted); font-size: 11px; }
+.access-users { display: grid; margin: 18px 0 22px; }
+.access-users > div:not(.empty) { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.access-users > div > span:first-child { display: grid; gap: 3px; }
+.access-users small { color: var(--muted); font-size: 10px; }
 .loading-card { min-height: 220px; display: grid; place-items: center; align-content: center; gap: 18px; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
 .loading-card i { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--red-bright); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

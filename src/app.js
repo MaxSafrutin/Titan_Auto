@@ -13,6 +13,10 @@ const fmtMoney = (value) => value === '' || value == null ? '—' : money.format
 const fmtDate = (value) => { try { return value ? dateTime.format(new Date(value)) : '—'; } catch { return '—'; } };
 const num = (value) => Number(String(value ?? '').replace(/[^0-9,.-]/g, '').replace(',', '.')) || 0;
 const formObject = (form) => Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value]));
+const currentUser = () => AppState.get('user') || { name:'Сотрудник', role:'manager' };
+const canFinancial = () => ['admin','director'].includes(currentUser().role);
+const canAdmin = () => currentUser().role === 'admin';
+const roleLabel = role => ({admin:'Администратор',director:'Руководитель',manager:'Менеджер'})[role] || role;
 
 function toast(message, type = '') {
   document.querySelector('.toast')?.remove();
@@ -42,8 +46,8 @@ function shell(content) {
           ${navLink('dashboard','Главная',current)}
           ${navLink('vehicles','Автомобили',current)}
           ${navLink('leads','Лиды',current)}
-          ${navLink('sales','Продажи',current)}
-          ${navLink('analytics','Аналитика',current)}
+          ${canFinancial()?navLink('sales','Продажи',current):''}
+          ${canFinancial()?navLink('analytics','Аналитика',current):''}
           <div class="nav-label">Инструменты</div>
           ${navLink('valuation','Оценка',current)}
           ${navLink('calls','Навигатор звонка',current)}
@@ -51,10 +55,11 @@ function shell(content) {
           ${navLink('stories','Сторис',current)}
           ${navLink('photos','Фото',current)}
           ${navLink('documents','Документы',current)}
-          ${navLink('payments','Калькулятор',current)}
+          ${canFinancial()?navLink('payments','Калькулятор',current):''}
         </nav>
         <div class="sidebar-footer nav">
-          ${navLink('settings','Настройки',current)}
+          ${canFinancial()?navLink('settings','Настройки',current):''}
+          <div class="session-user"><b>${h(currentUser().name)}</b><span>${h(roleLabel(currentUser().role))}</span></div>
           <a href="#/catalog">Публичный каталог ↗</a>
           <button class="btn ghost" data-action="logout">Выйти</button>
         </div>
@@ -68,7 +73,7 @@ function shell(content) {
         ${content}
       </main>
       <nav class="mobile-nav">
-        ${navLink('dashboard','Главная',current)}${navLink('vehicles','Авто',current)}${navLink('leads','Лиды',current)}${navLink('sales','Продажи',current)}${navLink('settings','Ещё',current)}
+        ${navLink('dashboard','Главная',current)}${navLink('vehicles','Авто',current)}${navLink('leads','Лиды',current)}${canFinancial()?navLink('sales','Продажи',current):navLink('calls','Звонки',current)}${canFinancial()?navLink('settings','Ещё',current):navLink('photos','Фото',current)}
       </nav>
     </div>`;
 }
@@ -95,7 +100,7 @@ async function dashboardView() {
     ['Активные автомобили', d.active_vehicles], ['Новые лиды', d.new_leads],
     ['Перезвонить сегодня', d.callbacks_today], ['Назначенные встречи', d.meetings_upcoming],
     ['Без оценки', d.without_valuation], ['Продано за месяц', d.sold_this_month],
-    ['Маржа за месяц', fmtMoney(d.margin_this_month)], ['Задачи сегодня', d.tasks_today],
+    ...(d.financial_access ? [['Маржа за месяц', fmtMoney(d.margin_this_month)]] : []), ['Задачи сегодня', d.tasks_today],
   ].map(([label,value],i) => `<article class="card stat ${i===2?'accent':''}"><span>${h(label)}</span><b>${h(value ?? 0)}</b></article>`).join('');
   const actions = '<button class="btn primary" data-action="new-vehicle">+ Автомобиль</button><button class="btn" data-action="new-lead">+ Лид</button>';
   root.innerHTML = shell(page('Главная', 'Что требует внимания сегодня', `<div class="grid stats">${cards}</div><div class="grid two" style="margin-top:18px"><section class="card"><h2>Ближайшие действия</h2>${timeline(d.upcoming_actions)}</section><section class="card"><h2>Последние автомобили</h2>${miniVehicles(d.recent_vehicles)}</section></div>`, actions));
@@ -361,10 +366,11 @@ async function paymentsView() {
 }
 
 async function settingsView() {
-  const settings = await TitanAPI.settings.get();
+  const [settings,users] = await Promise.all([TitanAPI.settings.get(),canAdmin()?TitanAPI.users.list():Promise.resolve([])]);
   const company = settings.company || {};
   const managersText = (company.managers || []).map(item => `${item.name || ''} | ${item.phone || ''}`).join('\n');
-  const body = `<section class="card accent"><h2>Реквизиты и сотрудники</h2><p class="muted">Хранятся в закрытой Google Таблице и загружаются только после входа. В публичном коде этих данных нет.</p><form class="form-grid" data-form="company-settings">
+  const accessCard=canAdmin()?`<section class="card access-card"><h2>Доступ сотрудников</h2><p class="muted">У каждого сотрудника отдельный PIN. PIN хранится только в виде хеша и не показывается после сохранения.</p><div class="access-users">${users.length?users.map(user=>`<div><span><b>${h(user.name)}</b><small>${h(user.user_id)}</small></span><span class="badge ${user.active?'success':''}">${h(roleLabel(user.role))}</span></div>`).join(''):'<div class="empty">Дополнительных пользователей пока нет</div>'}</div><form class="form-grid" data-form="staff-user"><div class="field"><label>Имя сотрудника *</label><input name="name" required></div><div class="field"><label>Роль *</label><select name="role"><option value="manager">Менеджер</option><option value="director">Руководитель</option><option value="admin">Администратор</option></select></div><div class="field"><label>Новый PIN *</label><input name="pin" type="password" inputmode="numeric" minlength="4" autocomplete="new-password" required></div><div class="wide actions"><button class="btn primary">Добавить сотрудника</button></div></form></section>`:'';
+  const body = `<div class="grid ${canAdmin()?'two':''}"><section class="card accent"><h2>Реквизиты и сотрудники</h2><p class="muted">Хранятся в закрытой Google Таблице и загружаются только после входа. В публичном коде этих данных нет.</p><form class="form-grid" data-form="company-settings">
     <div class="field wide"><label>Юридическое наименование</label><input name="legal_name" value="${h(company.legal_name)}"></div>
     <div class="field"><label>ОГРН</label><input name="ogrn" value="${h(company.ogrn)}"></div><div class="field"><label>ИНН</label><input name="inn" value="${h(company.inn)}"></div>
     <div class="field"><label>КПП</label><input name="kpp" value="${h(company.kpp)}"></div><div class="field"><label>Руководитель</label><input name="director" value="${h(company.director)}"></div>
@@ -374,7 +380,7 @@ async function settingsView() {
     <div class="field"><label>Расчётный счёт</label><input name="bank_account" value="${h(company.bank_account)}"></div><div class="field"><label>Корреспондентский счёт</label><input name="correspondent_account" value="${h(company.correspondent_account)}"></div>
     <div class="field wide"><label>Сотрудники — по одному в строке: Имя | Телефон</label><textarea name="managers_text" rows="7">${h(managersText)}</textarea></div>
     <div class="wide actions"><button class="btn primary">Сохранить реквизиты</button></div>
-  </form></section><div class="grid two" style="margin-top:18px"><section class="card"><h2>Подключение API</h2><form class="form-grid" data-form="api"><div class="field wide"><label>Google Apps Script Web App URL</label><input name="api_url" type="url" value="${h(Config.apiUrl)}" placeholder="https://script.google.com/macros/s/.../exec"></div><div class="wide actions"><button class="btn primary">Сохранить</button></div></form></section><section class="card"><h2>Архитектура</h2><p class="muted">Таблица и Drive подключаются только на backend через Script Properties. Секретов в браузере нет.</p><p>Версия ${h(Config.version)}</p></section></div>`;
+  </form></section>${accessCard}</div><div class="grid two" style="margin-top:18px"><section class="card"><h2>Подключение API</h2><form class="form-grid" data-form="api"><div class="field wide"><label>Google Apps Script Web App URL</label><input name="api_url" type="url" value="${h(Config.apiUrl)}" placeholder="https://script.google.com/macros/s/.../exec"></div><div class="wide actions"><button class="btn primary">Сохранить</button></div></form></section><section class="card"><h2>Архитектура</h2><p class="muted">Таблица и Drive подключаются только на backend через Script Properties. Секретов в браузере нет.</p><p>Версия ${h(Config.version)}</p></section></div>`;
   root.innerHTML = shell(page('Настройки', 'Защищённые данные компании и конфигурация', body));
 }
 
@@ -440,6 +446,7 @@ async function render() {
   const r = route();
   if (r.name === 'catalog') return r.id ? catalogVehicleView(r.id) : catalogView();
   if (!AppState.get('session')) return loginView();
+  if (['sales','analytics','payments','settings'].includes(r.name) && !canFinancial()) return root.innerHTML=shell(page('Раздел недоступен','Для этой страницы нужна роль руководителя или администратора','<div class="card empty"><p>Ваша роль: менеджер. Операционные разделы — автомобили, лиды и рабочие инструменты — доступны в меню.</p><a class="btn primary" href="#/dashboard">На главную</a></div>'));
   const loadingTitles = {dashboard:'Главная',vehicles:'Автомобили',leads:'Лиды',sales:'Продажи',analytics:'Аналитика',valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты',settings:'Настройки'};
   root.innerHTML = shell(page(loadingTitles[r.name] || 'TITAN AUTO', 'Загружаем актуальные данные', '<div class="loading-card"><i></i><b>Подождите немного…</b></div>'));
   try {
@@ -549,6 +556,11 @@ document.addEventListener('submit', async (event) => {
       const total=payment*months+down, overpayment=total-price;
       document.querySelector('[data-payment-result]').innerHTML=`<h2>Результат</h2><div class="metric-list"><div><span>Сумма кредита</span><b>${fmtMoney(principal)}</b></div><div><span>Платёж в месяц</span><b>${fmtMoney(payment)}</b></div><div><span>Общая выплата</span><b>${fmtMoney(total)}</b></div><div><span>Переплата</span><b>${fmtMoney(overpayment)}</b></div></div><p class="muted">Предварительный расчёт, не является офертой банка.</p>`;
       return;
+    }
+    if (type === 'staff-user') {
+      await TitanAPI.users.upsert(formObject(form));
+      toast('Доступ сотрудника сохранён');
+      return render();
     }
     if (type === 'company-settings') {
       const payload=formObject(form);

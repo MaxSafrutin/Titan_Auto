@@ -24,6 +24,7 @@
 
 - Public: `health`, `auth.login`, `vehicle.publicList`, `vehicle.publicGet`. Публичная карточка содержит только разрешённые поля автомобиля, публичные фото и контакт компании.
 - Auth: `auth.check`, `auth.logout`.
+- Users: `user.list`, `user.upsert` — только администратор; PIN передаётся только при создании/смене и хранится как хеш.
 - Vehicles: `vehicle.list`, `vehicle.get`, `vehicle.create`, `vehicle.update`, `vehicle.archive`, `vehicle.markSold`.
 - Leads: `lead.list`, `lead.get`, `lead.create`, `lead.update`.
 - Contacts: `contact.list`, `contact.create`.
@@ -43,7 +44,7 @@
 
 ## Авторизация
 
-PIN не хранится во frontend. Backend сравнивает SHA-256 hash и выдаёт случайный session token на 6 часов в `CacheService`. Все внутренние actions проверяют session и rate limit. Секреты хранятся только в Script Properties.
+PIN не хранится во frontend. Backend сравнивает SHA-256 hash и выдаёт случайный session token на 6 часов в `CacheService`. Сессия содержит роль `admin`, `director` или `manager`; права проверяются backend для каждого action. Администратор управляет доступами сотрудников, руководитель видит финансовые разделы, менеджер работает с операционным контуром без доступа к общим продажам, аналитике, выплатам и настройкам. Секреты хранятся только в Script Properties, пользовательские хеши — в закрытом листе `SETTINGS`.
 
 ## Ошибки
 
