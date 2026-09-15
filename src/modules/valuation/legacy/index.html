@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ТИТАН АВТО — Оценка автомобилей</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/logo.png" alt="ТИТАН АВТО">
+        <div><strong>Оценка авто</strong><span>рабочее место эксперта</span></div>
+      </div>
+      <button class="primary wide" id="newAssessment">＋ Новая оценка</button>
+      <nav>
+        <button class="nav-item active" data-view="registry">▦ <span>Журнал оценок</span><b id="registryCount">0</b></button>
+        <button class="nav-item" data-view="editor">◆ <span>Текущая оценка</span></button>
+        <button class="nav-item" data-view="settings">⚙ <span>Настройки</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot"></span> Данные хранятся локально
+        <small>Работает без сервера и интернета</small>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div><p class="eyebrow" id="viewEyebrow">РАБОЧЕЕ МЕСТО</p><h1 id="viewTitle">Журнал оценок</h1></div>
+        <div class="top-actions">
+          <button class="ghost" id="exportAll">Экспорт базы</button>
+          <label class="ghost file-button">Импорт базы<input type="file" id="importAll" accept="application/json"></label>
+        </div>
+      </header>
+
+      <section class="view active" id="registryView">
+        <div class="stats">
+          <article><span>Всего оценок</span><strong id="statAll">0</strong></article>
+          <article><span>В работе</span><strong id="statOpen">0</strong></article>
+          <article><span>Средний выкуп</span><strong id="statBuyout">—</strong></article>
+          <article><span>Объём предложений</span><strong id="statVolume">—</strong></article>
+        </div>
+        <div class="panel registry-panel">
+          <div class="panel-head">
+            <div><h2>Клиенты и автомобили</h2><p>Все оценки доступны для повторного просмотра и корректировки условий</p></div>
+            <div class="filters"><input id="search" placeholder="Поиск: клиент, телефон, VIN, авто"><select id="statusFilter"><option value="">Все статусы</option><option>Текущая оценка</option><option>Предложение</option><option>Ожидает клиента</option><option>Актуализация</option><option>Черновик</option><option>Сделка</option><option>Отказ</option></select></div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>№ / дата</th><th>Клиент</th><th>Автомобиль</th><th>Пробег</th><th>Рынок</th><th>Выкуп</th><th>Статус</th><th></th></tr></thead><tbody id="registryRows"></tbody></table></div>
+          <div class="empty" id="emptyRegistry"><div>◆</div><h3>Оценок пока нет</h3><p>Создайте первую карточку автомобиля — она автоматически появится здесь.</p><button class="primary" id="emptyNew">Создать оценку</button></div>
+        </div>
+      </section>
+
+      <section class="view" id="editorView">
+        <div class="editor-toolbar">
+          <div class="stepper" id="stepper"></div>
+          <div class="editor-actions"><button class="ghost" id="saveAssessment">Сохранить лист PDF</button><button class="primary" id="printAssessment">Печать сертификата</button><button class="primary" id="cloudSaveAssessment" type="button" hidden>Сохранить в TITAN AUTO</button></div>
+        </div>
+        <form id="assessmentForm" autocomplete="off">
+          <input type="hidden" name="id"><input type="hidden" name="createdAt">
+          <section class="step active" data-step="0">
+            <div class="section-title"><span>01</span><div><h2>Акт осмотра</h2><p>Заполняйте данные прямо в двухстраничном акте — он является основным источником данных</p></div></div>
+            <div class="panel act-editor-panel"><div class="panel-head"><div><h3>Интерактивный акт TITAN AUTO</h3><p>Поля, отметки, шкала масла и схема кузова работают внутри самого акта.</p></div><span id="actSyncState" class="original-badge">ЗАГРУЗКА</span></div><iframe id="inspectionActFrame" class="act-editor-frame" src="assets/inspection-act.html" title="Двухстраничный акт осмотра"></iframe></div>
+            <div class="panel"><h3>Юридическая проверка</h3><div class="form-grid two"><label>Результат<select name="legalStatus"><option value="">Не проверено</option><option>Ограничений не выявлено</option><option>Требуется дополнительная проверка</option><option>Выявлены ограничения</option></select></label><label>Комментарий<input name="legalNote" placeholder="Залоги, запреты, розыск, соответствие документов"></label></div></div>
+            <div class="form-grid two panel">
+              <div class="subsection"><h3>Клиент и источник</h3><label>Имя клиента для журнала и файлов<input name="clientName" placeholder="Иван"><small>Если оставить пустым, имя будет определено из ФИО в акте.</small></label><label>Источник<select name="source"><option value="">Не указан</option><option>Авито</option><option>Рекомендация</option><option>Повторный клиент</option><option>Проезжал мимо</option><option>Другое</option></select></label><label>Комментарий по клиенту<textarea name="ownerNote" rows="4" placeholder="Ожидания, удобное время связи, особенности сделки"></textarea></label></div>
+              <div class="subsection"><h3>Сделка</h3><div class="cols"><label>Дата оценки<input name="date" type="date"></label><label>Эксперт<input name="expert"></label></div><div class="cols"><label>Площадка<input name="location" placeholder="Самара"></label><label>Статус<select name="status"><option>Текущая оценка</option><option>Предложение</option><option>Ожидает клиента</option><option>Актуализация</option><option>Черновик</option><option>Сделка</option><option>Отказ</option></select></label></div><label>Следующая договорённость — дата и время<input name="nextContactAt" type="datetime-local"></label><label>Что договорились сделать<textarea name="nextContactNote" rows="2" placeholder="Созвониться через неделю, подготовить документы, повторно обсудить цену"></textarea></label><label>Пожелания по формату сделки<textarea name="dealNote" rows="3" placeholder="Нужен обмен, срочность, желаемая сумма"></textarea></label></div>
+            </div>
+            <div class="panel"><h3>Дополнительные данные, которых нет в акте</h3><div class="form-grid four"><label>Тип ПТС<select name="pts"><option value="">Не указано</option><option>Оригинал</option><option>Дубликат</option><option>ЭПТС</option></select></label><label>Двигатель (свободное описание)<input name="engine" placeholder="1.6 / 106 л.с."></label><label>Предыдущая цена клиента, ₽<input name="previousOwnerPrice" type="number" min="0"></label><label>Текущая цена клиета, ₽<input name="currentOwnerPrice" type="number" min="0"></label><label>Окрас и кузовные особенности<input name="paintCondition"></label><label>Комплектация и особенности<input name="features"></label></div></div>
+          </section>
+
+          <section class="step" data-step="1">
+            <div class="section-title"><span>02</span><div><h2>Нюансы, диагностика и фото</h2><p>Здесь остались только расходы и сведения, которых нет в акте</p></div></div>
+            <div class="panel"><div class="panel-head"><div><h3>Зафиксированные нюансы</h3><p id="defectSummary">0 позиций · 0 ₽</p></div><button type="button" class="primary small" id="addDefect">＋ Добавить</button></div><div id="defectList" class="item-list"></div></div>
+            <div class="panel"><div class="panel-head"><div><h3>Техническая диагностика</h3><p>Галочка означает, что узел проверен. Нажмите на строку, чтобы добавить результат и сумму вложений.</p></div></div><div class="tech-list" id="techChecks"></div><label>Итоговый комментарий эксперта<textarea name="inspectionNote" rows="4" placeholder="Общее состояние, результаты тест-драйва, риски и сильные стороны автомобиля"></textarea></label></div>
+            <div class="panel photo-panel"><div class="panel-head"><div><h3>Фото и документы осмотра</h3><p>Фото, СТС и ЭПТС сохраняются вместе с карточкой клиента.</p></div><label class="primary small file-button">＋ Загрузить фото<input type="file" id="photoInput" accept="image/*" multiple></label></div><div id="photoGallery" class="photo-gallery"></div><div class="document-uploads"><label class="ghost file-button">Загрузить СТС<input type="file" id="stsInput" accept="image/*,application/pdf"></label><span id="stsState">СТС не загружено</span><label class="ghost file-button">Загрузить ЭПТС<input type="file" id="eptsInput" accept="image/*,application/pdf"></label><span id="eptsState">ЭПТС не загружен</span></div><button type="button" class="primary" id="saveInspectionFolder">Сохранить весь проект оценки</button><p class="folder-hint">Будет создана именная папка проекта и подпапка «Фото осмотра».</p></div>
+          </section>
+
+          <section class="step" data-step="2">
+            <div class="section-title"><span>03</span><div><h2>Рынок и расчёт</h2><p>Границы рынка и аргументированное формирование предложений</p></div></div>
+            <div class="form-grid two">
+              <div class="panel"><h3>Аналитика объявлений</h3><div class="form-grid two"><label>Нижняя граница, ₽<input name="marketMin" type="number" min="0" data-calc></label><label>Верхняя граница, ₽<input name="marketMax" type="number" min="0" data-calc></label><label>Средняя цена, ₽<input name="marketAvg" type="number" min="0" data-calc></label><label>Объявлений в выборке<input name="marketCount" type="number" min="0"></label><label>Средний пробег, км<input name="marketMileage" type="number" min="0"></label><label>Спрос на автомобиль<select name="demandLevel" data-calc><option value="low">Низкий</option><option value="medium" selected>Средний</option><option value="high">Высокий</option></select></label></div><div class="market-timing-editor"><div class="market-timing-head"><div><h4>Срок реализации по цене</h4><p>Цены распределяются автоматически между границами рынка. Сроки можно изменить вручную.</p></div><button type="button" class="ghost small" id="resetMarketTiming">Вернуть авторасчёт</button></div><div class="market-timing-fields"><label><span id="marketPrice0">Низ рынка</span><input name="marketMinDays" type="number" min="1" value="3" data-calc><small>дней</small></label><label><span id="marketPrice1">25% рынка</span><input name="marketQuickDays" type="number" min="1" value="7" data-calc><small>дней</small></label><label><span id="marketPrice2">Средняя цена</span><input name="saleDays" type="number" min="1" value="14" data-calc><small>дней</small></label><label><span id="marketPrice3">75% рынка</span><input name="marketLongDays" type="number" min="1" value="30" data-calc><small>дней</small></label><label><span id="marketPrice4">Верх рынка</span><input name="marketMaxDays" type="number" min="1" value="45" data-calc><small>дней</small></label></div></div><label>Ссылка на выборку Авито<input name="marketUrl" type="url" placeholder="https://www.avito.ru/..."></label><label>Комментарий по рынку<textarea name="marketNote" rows="4" placeholder="Сезонность, аналоги, особенности выборки"></textarea></label></div>
+              <div class="panel calculator"><h3>Экономика сделки</h3><div class="calc-row"><span>Средняя рыночная цена</span><strong id="calcMarket">0 ₽</strong></div><div class="calc-row"><span id="calcMileageLabel">Поправка за пробег</span><strong id="calcMileage">0 ₽</strong></div><div class="calc-row"><span id="calcDemandLabel">Поправка за спрос</span><strong id="calcDemand">0 ₽</strong></div><div class="calc-row"><span>Цена после коэффициентов</span><strong id="calcAdjustedMarket">0 ₽</strong></div><div class="calc-row"><span>Подготовка и ремонт</span><strong class="negative" id="calcRepairs">− 0 ₽</strong></div><label>Резерв на риски, ₽<input name="riskReserve" type="number" min="0" data-calc></label><div class="margin-fields"><label>Плановая маржа выкупа, ₽<input name="buyoutMargin" type="number" min="0" readonly></label><label>Маржа, %<input name="buyoutMarginPercent" type="number" min="0" max="100" step="0.1" value="20" data-calc></label></div><label>Бонус трейд-ин, ₽<input name="tradeinBonus" type="number" min="0" data-calc></label><label>Комиссия ТИТАН АВТО, ₽<input name="commissionFee" type="number" min="0" data-calc></label><div class="calc-total"><span>Расчётная база</span><strong id="calcBase">0 ₽</strong></div></div>
+            </div>
+            <div class="price-cards"><article><span>БЫСТРЫЙ ВЫКУП</span><strong id="priceBuyout">0 руб.</strong><small>деньги сразу, риски берём на себя</small><button type="button" data-set-price="buyoutPrice">Применить расчёт</button><input name="buyoutPrice" type="number" min="0" data-calc></article><article><span>ТРЕЙД-ИН / ОБМЕН</span><strong id="priceTradein">0 руб.</strong><small>зачёт стоимости при покупке авто</small><button type="button" data-set-price="tradeinPrice">Применить расчёт</button><input name="tradeinPrice" type="number" min="0" data-calc></article><article><span>КОМИССИОННАЯ ПРОДАЖА</span><strong id="priceCommission">0 руб.</strong><small>рекомендуемая цена размещения</small><button type="button" data-set-price="commissionPrice">Применить расчёт</button><input name="commissionPrice" type="number" min="0" data-calc></article></div>
+            <div class="panel exchange-panel"><h3>Автомобиль для обмена</h3><div class="form-grid four"><label>Ссылка на автомобиль<input name="exchangeUrl" type="url" placeholder="https://www.avito.ru/..."></label><label>Цена меняемого авто, руб.<input name="exchangeTargetPrice" type="number" min="0" data-calc></label><label>Зачёт вашего автомобиля<input name="exchangeCredit" type="number" min="0" data-calc></label><div class="surcharge-box"><span>ДОПЛАТА ЗА МЕНЯЕМЫЙ АВТО</span><strong id="exchangeSurcharge">0 руб.</strong></div></div></div>
+            <div class="panel agreed-panel"><h3>Согласованные условия с клиентом</h3><p>Заполняется после обсуждения. Эти значения попадут в крест условий на втором листе.</p><div class="form-grid four"><label>Итоговый выкуп, ₽<input name="agreedBuyout" type="number" min="0"></label><label>Итоговый трейд-ин, ₽<input name="agreedTradein" type="number" min="0"></label><label>Итоговая комиссия, ₽<input name="agreedCommission" type="number" min="0"></label><label>Выбранный вариант<input name="agreedChoice" placeholder="Выкуп / трейд-ин / комиссия"></label></div><label>Особые условия<textarea name="agreedNote" rows="2" placeholder="Срок действия, доплата, выбранный автомобиль, иные договорённости"></textarea></label></div>
+          </section>
+
+          <section class="step" data-step="3">
+            <div class="section-title"><span>04</span><div><h2>Итог и печать</h2><p>Проверьте рабочий лист перед выдачей клиенту</p></div></div>
+            <div id="certificatePreview" class="certificate"></div>
+            <div class="panel final-project-save"><div><h3>Всё готово к сохранению</h3><p>Сохраните карточку, сертификат, документы и фото в единую именную папку проекта.</p></div><button type="button" class="primary" id="saveFinalProject">Сохранить весь проект оценки</button></div>
+          </section>
+        </form>
+        <div class="step-nav"><button class="ghost" id="prevStep">← Назад</button><span id="autosaveState">Изменения сохраняются автоматически</span><button class="primary" id="nextStep">Далее →</button></div>
+      </section>
+
+      <section class="view" id="settingsView">
+        <div class="settings-grid">
+          <div class="panel"><h2>Реквизиты площадки</h2><p>Изменения применяются ко всем новым сертификатам. Так приложение можно перенести на другую площадку.</p><form id="settingsForm"><label>Название<input name="companyName"></label><label>Слоган<input name="tagline"></label><label>Адрес / площадка<input name="address"></label><div class="cols"><label>Телефон<input name="companyPhone" type="tel" placeholder="+7 (999) 999-99-99"></label><label>Сайт / соцсеть<input name="website"></label></div><label>Эксперт по умолчанию<input name="defaultExpert"></label><button class="primary" type="submit">Сохранить настройки</button></form></div>
+          <div class="panel"><h2>Резервная копия</h2><p>Браузер хранит журнал на этом компьютере. Регулярно выгружайте JSON в папку <b>data/backup</b>.</p><button class="primary wide" id="settingsExport">Скачать резервную копию</button><label class="ghost wide file-button">Загрузить резервную копию<input type="file" id="settingsImport" accept="application/json"></label><hr><button class="danger wide" id="clearData">Удалить все оценки</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="defectDialog"><form method="dialog" id="defectForm"><div class="dialog-head"><div><p class="eyebrow">КАРТА ОСМОТРА</p><h2>Нюанс автомобиля</h2></div><button value="cancel" class="icon-btn">×</button></div><input type="hidden" name="defectId"><input type="hidden" name="mapX"><input type="hidden" name="mapY"><div class="form-grid two"><label>Зона<select name="zone"></select></label><label id="customZoneLabel" hidden>Свой элемент<input name="customZone" placeholder="Например: крепление аккумулятора"></label><label>Код оригинального акта<select name="originalCode"><option value="">Без кода</option><option>A1</option><option>A2</option><option>A3</option><option>A4</option><option>U1</option><option>U2</option><option>U3</option><option>U4</option><option>B1</option><option>B2</option><option>B3</option><option>B4</option><option>S</option><option>C</option><option>X</option><option>XX</option><option>W</option><option>G</option></select></label><label>Тип дефекта<select name="type"><option>Царапина</option><option>Скол</option><option>Вмятина</option><option>Ржавчина</option><option>Потёртость</option><option>Трещина</option><option>Некачественный окрас</option><option>Вторичный окрас</option><option>Замена элемента</option><option>Люфт / неисправность</option><option>Другое</option></select></label><label>Степень<select name="severity"><option>Незначительно</option><option>Требует внимания</option><option>Критично</option></select></label><label>Стоимость исправления, ₽<input name="cost" type="number" min="0"></label></div><label>Описание<textarea name="description" rows="3" placeholder="Размер, расположение, способ исправления"></textarea></label><div class="dialog-actions defect-dialog-actions"><button type="button" class="danger" id="deleteDefectMark" hidden>Удалить отметку</button><span></span><button value="cancel" class="ghost">Отмена</button><button value="default" class="primary" id="saveDefect">Сохранить нюанс</button></div></form></dialog>
+
+  <dialog id="techDialog"><form method="dialog" id="techForm"><div class="dialog-head"><div><p class="eyebrow">ТЕХНИЧЕСКАЯ ДИАГНОСТИКА</p><h2 id="techDialogTitle">Результат проверки</h2></div><button value="cancel" class="icon-btn">×</button></div><input type="hidden" name="techName"><label>Результат / комментарий<textarea name="comment" rows="4" placeholder="Как работает узел, что обнаружено, рекомендации"></textarea></label><label>Требуемые вложения, ₽<input name="cost" type="number" min="0"></label><div class="dialog-actions"><button value="cancel" class="ghost">Отмена</button><button value="default" class="primary" id="saveTech">Сохранить результат</button></div></form></dialog>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
