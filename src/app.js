@@ -191,7 +191,7 @@ async function leadView(id) {
   AppState.set('currentVehicle', null);
   const vehicleTitle = [lead.brand, lead.model, lead.year].filter(Boolean).join(' ') || 'Автомобиль не указан';
   const linkedVehicle = lead.vehicle_id ? `<a class="btn" href="#/vehicles/${h(lead.vehicle_id)}">Открыть ${h(lead.vehicle_id)}</a>` : '<button class="btn primary" data-action="convert-lead">Создать автомобиль</button>';
-  const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(lead.status || 'new')}</span><span class="muted">${h(lead.lead_id)}</span></div><h2 style="margin-top:22px">${h(vehicleTitle)}</h2><p class="muted">Цена продавца: ${fmtMoney(lead.seller_price)}</p><div class="actions">${linkedVehicle}${lead.source_url ? `<a class="btn" href="${h(lead.source_url)}" target="_blank" rel="noopener">Объявление</a>` : ''}</div></section><section class="card"><h2>Продавец</h2><p><b>${h(lead.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(lead.phone || 'Телефон не указан')}</span></p><p>Следующий контакт: <b>${fmtDate(lead.next_contact_at)}</b></p><p class="muted">${h(lead.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(lead.phone)}">Позвонить</a><button class="btn" data-action="new-contact">Новый контакт</button></div></section></div><section class="card" style="margin-top:18px"><h2>История контактов</h2>${timeline((data.contacts || []).map(x => ({ ...x, title: x.result || x.type, next_action_at: x.created_at })))}</section>`;
+  const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(lead.status || 'new')}</span><span class="muted">${h(lead.lead_id)}</span></div><h2 style="margin-top:22px">${h(vehicleTitle)}</h2><p class="muted">Цена продавца: ${fmtMoney(lead.seller_price)}</p><div class="actions">${linkedVehicle}${lead.source_url ? `<a class="btn" href="${h(lead.source_url)}" target="_blank" rel="noopener">Объявление</a>` : ''}</div></section><section class="card"><h2>Продавец</h2><p><b>${h(lead.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(lead.phone || 'Телефон не указан')}</span></p><p>Следующий контакт: <b>${fmtDate(lead.next_contact_at)}</b></p><p class="muted">${h(lead.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(lead.phone)}">Позвонить</a><button class="btn" data-action="open-calls">Открыть навигатор</button><button class="btn" data-action="new-contact">Новый контакт</button></div></section></div><section class="card" style="margin-top:18px"><h2>История контактов</h2>${timeline((data.contacts || []).map(x => ({ ...x, title: x.result || x.type, next_action_at: x.created_at })))}</section>`;
   root.innerHTML = shell(page(lead.lead_id, vehicleTitle, body, '<button class="btn" data-action="edit-lead">Изменить</button>'));
 }
 
@@ -289,11 +289,17 @@ async function valuationsView(vehicleId = '') {
   root.innerHTML=shell(page('Оценка','Все автомобили: журнал, акт осмотра, диагностика и расчёт предложений',body));
 }
 
-async function callsView() {
-  const snapshot = await TitanAPI.workspace.snapshot();
-  const leads = (snapshot.leads || []).filter(v => !['won','lost','archived','closed'].includes(v.status)).sort((a,b) => String(a.next_contact_at||'9999').localeCompare(String(b.next_contact_at||'9999')));
-  const body = leads.length ? `<div class="table-wrap"><table><thead><tr><th>Следующий контакт</th><th>Клиент</th><th>Автомобиль</th><th>Телефон</th><th>Действие</th></tr></thead><tbody>${leads.map(v => `<tr><td>${fmtDate(v.next_contact_at)}</td><td><a href="#/leads/${h(v.lead_id)}"><b>${h(v.seller_name||v.lead_id)}</b></a></td><td>${h([v.brand,v.model,v.year].filter(Boolean).join(' ')||'—')}</td><td>${h(v.phone||'—')}</td><td>${v.phone?`<a class="btn primary" href="tel:${h(v.phone)}">Позвонить</a>`:'<span class="muted">Нет телефона</span>'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="card empty">Активных лидов для звонка нет.</div>';
-  root.innerHTML = shell(page('Навигатор звонка', 'Очередь контактов — ближайшие звонки всегда сверху', body, '<button class="btn primary" data-action="new-lead">+ Новый лид</button>'));
+async function callsView(leadId = '') {
+  if(leadId){
+    const data=await TitanAPI.leads.get(leadId),lead=data.lead,title=[lead.brand,lead.model,lead.year].filter(Boolean).join(' ');
+    AppState.set('currentLead',lead);
+    const body=`<div class="story-context card"><div><span class="badge">${h(lead.status||'new')}</span><b>${h(lead.seller_name||lead.lead_id)} · ${h(title||'автомобиль не указан')}</b><span class="muted">${h(lead.phone||'нет телефона')}</span></div><div class="actions"><a class="btn" href="#/leads/${h(lead.lead_id)}">Карточка лида</a>${lead.phone?`<a class="btn primary" href="tel:${h(lead.phone)}">Позвонить</a>`:''}</div></div><div class="tool-frame-wrap calls-frame-wrap"><iframe class="tool-frame calls-frame" title="Навигатор звонка" src="src/modules/calls/legacy/titan_auto_call_navigator_improved.html?embedded=1"></iframe></div>`;
+    root.innerHTML=shell(page('Навигатор звонка',`${lead.lead_id} · сценарий, возражения, итоги и следующий контакт`,body,'<a class="btn" href="#/calls">← Очередь звонков</a>'));
+    const frame=document.querySelector('.calls-frame');frame.addEventListener('load',()=>frame.contentWindow.postMessage({type:'TITAN_CALL_LOAD',lead},location.origin),{once:true});return;
+  }
+  const snapshot=await TitanAPI.workspace.snapshot(),leads=(snapshot.leads||[]).sort((a,b)=>Number(['won','lost','archived','closed'].includes(a.status))-Number(['won','lost','archived','closed'].includes(b.status))||String(a.next_contact_at||'9999').localeCompare(String(b.next_contact_at||'9999')));
+  const body=leads.length?`<div class="table-wrap"><table><thead><tr><th>Следующий контакт</th><th>Клиент</th><th>Автомобиль</th><th>Телефон</th><th>Навигатор</th></tr></thead><tbody>${leads.map(lead=>`<tr data-call-lead="${h(lead.lead_id)}"><td>${fmtDate(lead.next_contact_at)}</td><td><b>${h(lead.seller_name||lead.lead_id)}</b><div class="muted">${h(lead.lead_id)}</div></td><td>${h([lead.brand,lead.model,lead.year].filter(Boolean).join(' ')||'—')}</td><td>${h(lead.phone||'—')}</td><td><button class="btn primary" data-call-lead="${h(lead.lead_id)}">Открыть сценарий</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="card empty">Создайте первый лид — он появится в очереди.</div>';
+  root.innerHTML=shell(page('Навигатор звонка','Все лиды: сценарий разговора, переписка, контроль качества и договорённости',body,'<button class="btn primary" data-action="new-lead">+ Новый лид</button>'));
 }
 
 async function photosView(vehicleId = '') {
@@ -424,7 +430,7 @@ async function render() {
     if (r.name === 'sales') return salesView();
     if (r.name === 'analytics') return analyticsView();
     if (r.name === 'valuation') return valuationsView(r.id);
-    if (r.name === 'calls') return callsView();
+    if (r.name === 'calls') return callsView(r.id);
     if (r.name === 'price-tags') return priceTagsView();
     if (r.name === 'stories') return storiesView(r.id);
     if (r.name === 'photos') return photosView(r.id);
@@ -439,6 +445,8 @@ async function render() {
 }
 
 document.addEventListener('click', async (event) => {
+  const callLeadId=event.target.closest('[data-call-lead]')?.dataset.callLead;
+  if(callLeadId){navigate(`calls/${callLeadId}`);return render();}
   const valuationVehicleId=event.target.closest('[data-valuation-vehicle]')?.dataset.valuationVehicle;
   if(valuationVehicleId){navigate(`valuation/${valuationVehicleId}`);return render();}
   const photoVehicleId=event.target.closest('[data-photo-vehicle]')?.dataset.photoVehicle;
@@ -462,6 +470,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'new-contact') return contactForm();
   if (action === 'new-valuation') return valuationForm();
   if (action === 'open-valuation') { const vehicle=AppState.get('currentVehicle'); if(vehicle) navigate(`valuation/${vehicle.vehicle_id}`); return render(); }
+  if (action === 'open-calls') { const lead=AppState.get('currentLead'); if(lead) navigate(`calls/${lead.lead_id}`); return render(); }
   if (action === 'upload-for') {
     try { const data=await TitanAPI.vehicles.get(event.target.closest('[data-vehicle-id]').dataset.vehicleId); AppState.set('currentVehicle',data.vehicle); uploadForm(); const type=event.target.closest('[data-file-type]')?.dataset.fileType; if(type) document.querySelector('[data-form="file"] select[name="type"]').value=type; return; }
     catch(e) { return toast(errorMessage(e),'error'); }
@@ -575,6 +584,17 @@ addEventListener('message',async event=>{
       const saved=await TitanAPI.files.upload({vehicle_id:message.vehicleId,type:'photos',description:file.description||'Обработанное фото из редактора TITAN AUTO',filename:file.filename,mime_type:file.mimeType||'image/jpeg',data_url:file.dataUrl});
       event.source.postMessage({type:'TITAN_PHOTO_UPLOAD_RESULT',requestId:message.requestId,ok:true,file:saved},location.origin);toast('Фото сохранено в Google Drive');
     }catch(error){event.source.postMessage({type:'TITAN_PHOTO_UPLOAD_RESULT',requestId:message.requestId,ok:false,error:errorMessage(error)},location.origin)}
+    return;
+  }
+  if(event.data?.type==='TITAN_CALL_SAVE'){
+    const frame=document.querySelector('.calls-frame');if(!frame||event.source!==frame.contentWindow)return;
+    const message=event.data,packet=message.packet||{},client=packet.client||{},vehicle=packet.vehicle||{},contact=packet.contact||{},currentLead=AppState.get('currentLead')||{};
+    try{
+      const phone=/\d{7}/.test(String(client.contact||''))?client.contact:currentLead.phone||'';
+      await TitanAPI.leads.update(message.leadId,{seller_name:client.name||currentLead.seller_name||'',phone,source:vehicle.source||currentLead.source||'',source_url:vehicle.listingUrl||currentLead.source_url||'',seller_price:num(vehicle.price),listing_date:vehicle.listingDate||'',lead_channel:vehicle.source||'',call_sequence:contact.sequence||'',previous_outcome:contact.result||'',previous_agreement:contact.agreement||'',market_position:vehicle.marketPosition||'',listing_restriction:vehicle.listingRestriction||'',need:contact.need||'',objection:contact.objection||'',next_contact_at:contact.nextContactAt||'',next_contact_type:contact.nextContactType||'',meeting_place:contact.meetingPlace||'',notes:contact.summary||'',post_call_text:packet.message?.maxTelegram||'',status:'in_work'});
+      const saved=await TitanAPI.contacts.create({lead_id:message.leadId,vehicle_id:currentLead.vehicle_id||'',type:contact.mode||'Звонок',result:contact.result||'Контакт зафиксирован',summary:contact.summary||'',agreement:contact.agreement||'',objection:contact.objection||'',comment:(contact.history||[]).map(item=>`${item.time||''} ${item.answer||''}`.trim()).join('\n'),next_action:contact.nextAction||contact.nextContactType||'',next_action_at:contact.nextContactAt||'',channel:contact.mode||'',message:packet.message?.maxTelegram||'',payload_json:JSON.stringify(packet)});
+      event.source.postMessage({type:'TITAN_CALL_SAVE_RESULT',requestId:message.requestId,ok:true,contact:saved},location.origin);toast('Лид и контакт сохранены');
+    }catch(error){event.source.postMessage({type:'TITAN_CALL_SAVE_RESULT',requestId:message.requestId,ok:false,error:errorMessage(error)},location.origin)}
     return;
   }
   if(event.data?.type==='TITAN_VALUATION_SAVE'){
