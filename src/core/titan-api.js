@@ -1,4 +1,4 @@
-import { Config } from './config.js';
+import { Config } from './config.js?v=1.6.1';
 import { AppState } from './state.js';
 
 const READ_ACTIONS = new Set(['health','auth.check','dashboard.stats','workspace.snapshot','documents.snapshot','settings.get','user.list','counterparty.list','deal.list','template.list','vehicle.list','vehicle.publicList','vehicle.publicGet','vehicle.get','lead.list','lead.get','contact.list','valuation.list','sale.list','file.list','file.getDownload','task.list']);
@@ -52,7 +52,8 @@ async function request(action, payload = {}) {
   const attempts = cacheable ? 2 : 1;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      const envelope = await fetchEnvelope(action, payload, action === 'file.upload' ? 90000 : Config.requestTimeoutMs);
+      const timeoutMs = action === 'file.upload' ? 90000 : action === 'auth.login' ? 45000 : Config.requestTimeoutMs;
+      const envelope = await fetchEnvelope(action, payload, timeoutMs);
       if (!envelope.ok) throw new TitanApiError(envelope.error?.code, envelope.error?.message);
       if (cacheable) responseCache.set(cacheKey, { time: Date.now(), value: envelope.data });
       return envelope.data;

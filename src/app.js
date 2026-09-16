@@ -1,7 +1,7 @@
-import { Config, saveApiUrl } from './core/config.js';
-import { TitanAPI } from './core/titan-api.js';
+import { Config, saveApiUrl } from './core/config.js?v=1.6.1';
+import { TitanAPI } from './core/titan-api.js?v=1.6.1';
 import { AppState } from './core/state.js';
-import { Auth } from './core/auth.js';
+import { Auth } from './core/auth.js?v=1.6.1';
 import { route, navigate } from './core/router.js';
 
 const root = document.querySelector('#app');

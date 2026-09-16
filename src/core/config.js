@@ -3,9 +3,9 @@ const storedApiUrl = localStorage.getItem('titan.apiUrl') || deployedApiUrl;
 
 export const Config = Object.freeze({
   apiUrl: storedApiUrl,
-  requestTimeoutMs: 15000,
+  requestTimeoutMs: 30000,
   appName: 'TITAN AUTO',
-  version: '1.6.0',
+  version: '1.6.1',
 });
 
 export function saveApiUrl(value) {

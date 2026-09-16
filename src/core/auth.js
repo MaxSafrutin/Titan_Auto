@@ -1,4 +1,4 @@
-import { TitanAPI } from './titan-api.js';
+import { TitanAPI } from './titan-api.js?v=1.6.1';
 import { AppState } from './state.js';
 
 export const Auth = {
