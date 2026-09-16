@@ -46,6 +46,7 @@ function shell(content) {
           ${navLink('dashboard','Главная',current)}
           ${navLink('vehicles','Автомобили',current)}
           ${navLink('leads','Лиды',current)}
+          ${navLink('tasks','Задачи',current)}
           ${canFinancial()?navLink('sales','Продажи',current):''}
           ${canFinancial()?navLink('analytics','Аналитика',current):''}
           <div class="nav-label">Инструменты</div>
@@ -128,6 +129,20 @@ async function leadsView(query = '') {
   root.innerHTML = shell(page('Лиды', 'Входящие обращения и следующие действия', body, '<button class="btn primary" data-action="new-lead">+ Лид</button>'));
 }
 
+async function tasksView() {
+  const rows = await TitanAPI.tasks.list();
+  const now = new Date().toISOString();
+  const open = rows.filter(item => item.status !== 'done').sort((a,b) => String(a.due_at || '9999').localeCompare(String(b.due_at || '9999')));
+  const done = rows.filter(item => item.status === 'done').sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const taskRows = [...open, ...done];
+  const body = taskRows.length ? `<div class="table-wrap"><table><thead><tr><th>Задача</th><th>Связь</th><th>Срок</th><th>Исполнитель</th><th>Приоритет</th><th>Статус</th><th></th></tr></thead><tbody>${taskRows.map(item => {
+    const relation = item.vehicle_id ? `<a href="#/vehicles/${h(item.vehicle_id)}">${h(item.vehicle_id)}</a>` : item.lead_id ? `<a href="#/leads/${h(item.lead_id)}">${h(item.lead_id)}</a>` : 'Общая';
+    const overdue = item.status !== 'done' && item.due_at && String(item.due_at) < now;
+    return `<tr class="${item.status==='done'?'task-done':''}"><td><b>${h(item.title)}</b>${item.comment?`<small class="table-note">${h(item.comment)}</small>`:''}</td><td>${relation}</td><td><span class="badge ${overdue?'danger':''}">${fmtDate(item.due_at)}</span></td><td>${h(item.assignee || '—')}</td><td>${h(item.priority || 'normal')}</td><td>${h(item.status || 'open')}</td><td>${item.status!=='done'?`<button class="btn ghost" data-task-done="${h(item.task_id)}">Готово</button>`:''}</td></tr>`;
+  }).join('')}</tbody></table></div>` : '<div class="card empty">Задач пока нет. Создайте первое напоминание.</div>';
+  root.innerHTML = shell(page('Задачи', `Открыто: ${open.length} · выполнено: ${done.length}`, body, '<button class="btn primary" data-action="new-task">+ Задача</button>'));
+}
+
 async function salesView() {
   const snapshot = await TitanAPI.workspace.snapshot();
   const sales = snapshot.sales || [], vehicles = snapshot.vehicles || [];
@@ -196,7 +211,7 @@ async function leadView(id) {
   AppState.set('currentVehicle', null);
   const vehicleTitle = [lead.brand, lead.model, lead.year].filter(Boolean).join(' ') || 'Автомобиль не указан';
   const linkedVehicle = lead.vehicle_id ? `<a class="btn" href="#/vehicles/${h(lead.vehicle_id)}">Открыть ${h(lead.vehicle_id)}</a>` : '<button class="btn primary" data-action="convert-lead">Создать автомобиль</button>';
-  const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(lead.status || 'new')}</span><span class="muted">${h(lead.lead_id)}</span></div><h2 style="margin-top:22px">${h(vehicleTitle)}</h2><p class="muted">Цена продавца: ${fmtMoney(lead.seller_price)}</p><div class="actions">${linkedVehicle}${lead.source_url ? `<a class="btn" href="${h(lead.source_url)}" target="_blank" rel="noopener">Объявление</a>` : ''}</div></section><section class="card"><h2>Продавец</h2><p><b>${h(lead.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(lead.phone || 'Телефон не указан')}</span></p><p>Следующий контакт: <b>${fmtDate(lead.next_contact_at)}</b></p><p class="muted">${h(lead.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(lead.phone)}">Позвонить</a><button class="btn" data-action="open-calls">Открыть навигатор</button><button class="btn" data-action="new-contact">Новый контакт</button></div></section></div><section class="card" style="margin-top:18px"><h2>История контактов</h2>${timeline((data.contacts || []).map(x => ({ ...x, title: x.result || x.type, next_action_at: x.created_at })))}</section>`;
+  const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(lead.status || 'new')}</span><span class="muted">${h(lead.lead_id)}</span></div><h2 style="margin-top:22px">${h(vehicleTitle)}</h2><p class="muted">Цена продавца: ${fmtMoney(lead.seller_price)}</p><div class="actions">${linkedVehicle}${lead.source_url ? `<a class="btn" href="${h(lead.source_url)}" target="_blank" rel="noopener">Объявление</a>` : ''}</div></section><section class="card"><h2>Продавец</h2><p><b>${h(lead.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(lead.phone || 'Телефон не указан')}</span></p><p>Следующий контакт: <b>${fmtDate(lead.next_contact_at)}</b></p><p class="muted">${h(lead.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(lead.phone)}">Позвонить</a><button class="btn" data-action="open-calls">Открыть навигатор</button><button class="btn" data-action="new-contact">Новый контакт</button><button class="btn" data-action="new-task">Задача</button></div></section></div><section class="card" style="margin-top:18px"><h2>История контактов</h2>${timeline((data.contacts || []).map(x => ({ ...x, title: x.result || x.type, next_action_at: x.created_at })))}</section>`;
   root.innerHTML = shell(page(lead.lead_id, vehicleTitle, body, '<button class="btn" data-action="edit-lead">Изменить</button>'));
 }
 
@@ -208,7 +223,7 @@ async function vehicleView(id) {
   const metrics = [['Цена продавца',v.seller_price],['Рыночная',v.market_price],['Выкуп',v.buyout_price],['Цена продажи',v.sale_price],['Вложения',v.estimated_investments],['Комиссия',v.commission]].map(([k,val]) => `<div class="metric"><span class="muted">${k}</span><strong>${fmtMoney(val)}</strong></div>`).join('');
   const body = `<div class="grid two"><section class="card accent"><div class="vehicle-title"><span class="badge">${h(v.status)}</span><span class="muted">${h(v.public_status || 'private')}</span></div><h2 style="margin-top:22px">${h(title)}</h2><p class="muted">${h([v.year, v.engine_volume, v.transmission, v.mileage ? `${Number(v.mileage).toLocaleString('ru-RU')} км` : ''].filter(Boolean).join(' · '))}</p><div class="grid stats">${metrics}</div></section><section class="card"><h2>Контакт</h2><p><b>${h(v.seller_name || 'Имя не указано')}</b><br><span class="muted">${h(v.seller_phone || 'Телефон не указан')}</span></p><p class="muted">${h(v.notes || 'Заметок нет')}</p><div class="actions"><a class="btn primary" href="tel:${h(v.seller_phone)}">Позвонить</a><button class="btn" data-action="new-contact">Новый контакт</button><button class="btn" data-action="open-valuation">Полная оценка</button></div></section></div>
   <div class="grid two" style="margin-top:18px"><section class="card"><h2>История контактов</h2>${timeline((data.contacts||[]).map(x=>({...x,title:x.result||x.type,next_action_at:x.created_at})))}</section><section class="card"><h2>Оценки</h2>${(data.valuations||[]).length ? timeline(data.valuations.map(x=>({title:`Рынок ${fmtMoney(x.market_price)} · Выкуп ${fmtMoney(x.buyout_price)}`,due_at:x.created_at}))) : '<div class="empty">Оценок пока нет</div>'}</section><section class="card"><h2>Файлы</h2>${fileList(data.files)}</section><section class="card"><h2>История изменений</h2>${(data.audit||[]).length ? timeline(data.audit.map(x=>({title:`${x.field}: ${x.old_value||'—'} → ${x.new_value||'—'}`,due_at:x.created_at}))) : '<div class="empty">Изменений пока нет</div>'}</section></div>`;
-  const actions = `<button class="btn" data-action="edit-vehicle">Изменить</button><button class="btn ${v.public_status==='published'?'':'primary'}" data-action="toggle-publish">${v.public_status==='published'?'Снять с публикации':'Опубликовать на складе'}</button>${v.public_status==='published'?`<a class="btn" href="#/catalog/${h(v.vehicle_id)}">Посмотреть публично ↗</a>`:''}<button class="btn" data-action="open-price-tag">Ценник</button><button class="btn" data-action="open-stories">Сторис</button><button class="btn" data-action="open-photos">Фото</button><button class="btn" data-action="upload-file">Загрузить файл</button><button class="btn primary" data-action="mark-sold">Продано</button>`;
+  const actions = `<button class="btn" data-action="edit-vehicle">Изменить</button><button class="btn ${v.public_status==='published'?'':'primary'}" data-action="toggle-publish">${v.public_status==='published'?'Снять с публикации':'Опубликовать на складе'}</button>${v.public_status==='published'?`<a class="btn" href="#/catalog/${h(v.vehicle_id)}">Посмотреть публично ↗</a>`:''}<button class="btn" data-action="new-task">Задача</button><button class="btn" data-action="open-price-tag">Ценник</button><button class="btn" data-action="open-stories">Сторис</button><button class="btn" data-action="open-photos">Фото</button><button class="btn" data-action="upload-file">Загрузить файл</button><button class="btn primary" data-action="mark-sold">Продано</button>`;
   root.innerHTML = shell(page(v.vehicle_id, title, body, actions));
 }
 
@@ -480,6 +495,7 @@ function leadForm(lead = {}) {
 
 function contactForm() { showModal('Новый контакт', `<form class="form-grid" data-form="contact"><div class="field"><label>Тип</label><select name="type"><option>Звонок</option><option>Сообщение</option><option>Встреча</option><option>Осмотр</option></select></div><div class="field"><label>Результат *</label><input name="result" required></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="field"><label>Следующее действие</label><input name="next_action"></div><div class="field"><label>Когда</label><input name="next_action_at" type="datetime-local"></div><div class="wide actions"><button class="btn primary">Сохранить контакт</button></div></form>`); }
 function valuationForm() { showModal('Новая оценка', `<form class="form-grid" data-form="valuation"><div class="field"><label>Рыночная цена</label><input name="market_price" type="number"></div><div class="field"><label>Рекомендуемая цена</label><input name="recommended_price" type="number"></div><div class="field"><label>Цена выкупа</label><input name="buyout_price" type="number"></div><div class="field"><label>Вложения</label><input name="estimated_investments" type="number"></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="wide actions"><button class="btn primary">Сохранить оценку</button></div></form>`); }
+function taskForm(context = {}) { showModal('Новая задача', `<form class="form-grid" data-form="task"><div class="field wide"><label>Задача *</label><input name="title" required autofocus></div><div class="field"><label>Срок</label><input name="due_at" type="datetime-local"></div><div class="field"><label>Исполнитель</label><input name="assignee" value="${h(currentUser().name)}"></div><div class="field"><label>Приоритет</label><select name="priority"><option value="normal">Обычный</option><option value="high">Высокий</option><option value="urgent">Срочный</option><option value="low">Низкий</option></select></div><div class="field"><label>Автомобиль</label><input name="vehicle_id" value="${h(context.vehicle_id)}" placeholder="TA-000001"></div><div class="field"><label>Лид</label><input name="lead_id" value="${h(context.lead_id)}" placeholder="LEAD-000001"></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="wide actions"><button class="btn primary">Создать задачу</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`); }
 function uploadForm() { showModal('Загрузить файл', `<form class="form-grid" data-form="file"><div class="field"><label>Раздел</label><select name="type"><option value="photos">Фото</option><option value="documents">Документы</option><option value="price-tags">Ценники</option><option value="stories">Сторис</option><option value="reports">Отчёты</option></select></div><div class="field"><label>Файл</label><input name="file" type="file" required></div><div class="field wide"><label>Описание</label><input name="description"></div><div class="wide actions"><button class="btn primary">Загрузить</button></div></form>`); }
 
 function saleForm(vehicle = {}, vehicles = []) {
@@ -515,7 +531,7 @@ async function render() {
   if (r.name === 'catalog') return r.id ? catalogVehicleView(r.id) : catalogView();
   if (!AppState.get('session')) return loginView();
   if (['sales','analytics','payments','settings'].includes(r.name) && !canFinancial()) return root.innerHTML=shell(page('Раздел недоступен','Для этой страницы нужна роль руководителя или администратора','<div class="card empty"><p>Ваша роль: менеджер. Операционные разделы — автомобили, лиды и рабочие инструменты — доступны в меню.</p><a class="btn primary" href="#/dashboard">На главную</a></div>'));
-  const loadingTitles = {dashboard:'Главная',vehicles:'Автомобили',leads:'Лиды',sales:'Продажи',analytics:'Аналитика',valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты',settings:'Настройки'};
+  const loadingTitles = {dashboard:'Главная',vehicles:'Автомобили',leads:'Лиды',tasks:'Задачи',sales:'Продажи',analytics:'Аналитика',valuation:'Оценка',calls:'Навигатор звонка','price-tags':'Ценники',stories:'Сторис',photos:'Фото',documents:'Документы',payments:'Калькулятор оплаты',settings:'Настройки'};
   root.innerHTML = shell(page(loadingTitles[r.name] || 'TITAN AUTO', 'Загружаем актуальные данные', '<div class="loading-card"><i></i><b>Подождите немного…</b></div>'));
   try {
     if (r.name === 'dashboard') return dashboardView();
@@ -523,6 +539,7 @@ async function render() {
     if (r.name === 'vehicles') return vehiclesView(r.query);
     if (r.name === 'leads' && r.id) return leadView(r.id);
     if (r.name === 'leads') return leadsView(r.query);
+    if (r.name === 'tasks') return tasksView();
     if (r.name === 'sales') return salesView();
     if (r.name === 'analytics') return analyticsView();
     if (r.name === 'valuation') return valuationsView(r.id);
@@ -541,6 +558,8 @@ async function render() {
 }
 
 document.addEventListener('click', async (event) => {
+  const completedTaskId=event.target.closest('[data-task-done]')?.dataset.taskDone;
+  if(completedTaskId){try{await TitanAPI.tasks.update(completedTaskId,{status:'done'});toast('Задача выполнена');return render();}catch(error){return toast(errorMessage(error),'error');}}
   const callLeadId=event.target.closest('[data-call-lead]')?.dataset.callLead;
   if(callLeadId){navigate(`calls/${callLeadId}`);return render();}
   const valuationVehicleId=event.target.closest('[data-valuation-vehicle]')?.dataset.valuationVehicle;
@@ -569,6 +588,10 @@ document.addEventListener('click', async (event) => {
     catch(error) { return toast(errorMessage(error),'error'); }
   }
   if (action === 'new-contact') return contactForm();
+  if (action === 'new-task') {
+    const currentRoute=route(),vehicle=currentRoute.name==='vehicles'?AppState.get('currentVehicle'):null,lead=currentRoute.name==='leads'?AppState.get('currentLead'):null;
+    return taskForm({vehicle_id:vehicle?.vehicle_id||'',lead_id:lead?.lead_id||''});
+  }
   if (action === 'new-valuation') return valuationForm();
   if (action === 'open-valuation') { const vehicle=AppState.get('currentVehicle'); if(vehicle) navigate(`valuation/${vehicle.vehicle_id}`); return render(); }
   if (action === 'open-calls') { const lead=AppState.get('currentLead'); if(lead) navigate(`calls/${lead.lead_id}`); return render(); }
@@ -630,6 +653,7 @@ document.addEventListener('submit', async (event) => {
       toast('Доступ сотрудника сохранён');
       return render();
     }
+    if (type === 'task') { await TitanAPI.tasks.create(formObject(form)); closeModal(); toast('Задача создана'); return render(); }
     if (type === 'company-settings') {
       const payload=formObject(form);
       const managers=payload.managers_text.split(/\r?\n/).map(line=>{const parts=line.split('|');return {name:(parts.shift()||'').trim(),phone:parts.join('|').trim()};}).filter(item=>item.name||item.phone);
