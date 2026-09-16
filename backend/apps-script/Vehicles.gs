@@ -26,26 +26,39 @@ function containsVehicle(row, q) {
 
 function publicVehicleList(filters) {
   var q = String((filters || {}).q || '').toLowerCase().replace(/\s/g, '');
+  var photoByVehicle = {};
+  listRecordsLite('FILES').forEach(function (file) {
+    if (!isPublicPhoto(file)) return;
+    if (!photoByVehicle[file.vehicle_id]) photoByVehicle[file.vehicle_id] = [];
+    photoByVehicle[file.vehicle_id].push(file.drive_file_id);
+  });
   return sortNewest(listRecordsLite('VEHICLES').filter(function (row) {
     return row.public_status === 'published' && row.status !== 'sold' && row.status !== 'archived' && (!q || containsVehicle(row, q));
-  })).map(publicVehicle);
+  })).map(function (row) {
+    var result = publicVehicle(row);
+    var photos = photoByVehicle[row.vehicle_id] || [];
+    var coverId = photos.indexOf(row.cover_file_id) >= 0 ? row.cover_file_id : photos[0];
+    if (coverId) result.cover_url = 'https://drive.google.com/thumbnail?id=' + coverId + '&sz=w1200';
+    return result;
+  });
 }
 
 function publicVehicleGet(id) {
   var row = findRecordLite('VEHICLES', 'vehicle_id', id);
   if (!row || row.public_status !== 'published' || ['sold','archived'].indexOf(String(row.status)) >= 0) throw apiError('PUBLIC_VEHICLE_NOT_FOUND', 'Автомобиль не опубликован или уже снят с продажи.');
   var vehicle = publicVehicle(row);
-  vehicle.photos = sortNewest(listRecordsLite('FILES').filter(function (file) {
-    return String(file.vehicle_id) === String(id) && file.type === 'photos' && String(file.description || '').indexOf('[DELETED]') !== 0;
-  })).slice(0, 12).map(function (file) { return 'https://drive.google.com/thumbnail?id=' + file.drive_file_id + '&sz=w1600'; });
+  var photos = publicPhotosForVehicle(id);
+  var preferred = photos.filter(function (file) { return String(file.drive_file_id) === String(row.cover_file_id); })[0];
+  if (preferred) vehicle.cover_url = 'https://drive.google.com/thumbnail?id=' + preferred.drive_file_id + '&sz=w1200';
+  else if (photos.length) vehicle.cover_url = 'https://drive.google.com/thumbnail?id=' + photos[0].drive_file_id + '&sz=w1200';
+  vehicle.photos = photos.slice(0, 12).map(function (file) { return 'https://drive.google.com/thumbnail?id=' + file.drive_file_id + '&sz=w1600'; });
   var company = companySettingsGet().company || {};
   return { vehicle: vehicle, company: { legal_name: company.legal_name || 'ТИТАН АВТО', phone: company.phone || '', address: company.address || '' } };
 }
 
 function syncPublicPhotoAccess(vehicleId, isPublic) {
-  listRecordsLite('FILES').filter(function (file) { return String(file.vehicle_id) === String(vehicleId) && file.type === 'photos'; }).forEach(function (file) {
-    try { DriveApp.getFileById(file.drive_file_id).setSharing(isPublic ? DriveApp.Access.ANYONE_WITH_LINK : DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW); }
-    catch (error) { console.warn('Не удалось изменить доступ к фото ' + file.drive_file_id + ': ' + error.message); }
+  listRecordsLite('FILES').filter(function (file) { return String(file.vehicle_id) === String(vehicleId) && file.type === 'photos' && String(file.description || '').indexOf('[DELETED]') !== 0; }).forEach(function (file) {
+    syncPhotoSharing(file, isPublic);
   });
 }
 
@@ -86,8 +99,9 @@ function vehicleUpdate(id, changes, session) {
   Object.keys(changes || {}).forEach(function (key) { if (allowed[key] && ['vehicle_id','created_at'].indexOf(key) < 0) data[key] = changes[key]; });
   ['year','mileage','engine_volume','engine_power','owners_count','seller_price','market_price','buyout_price','purchase_price','sale_price','estimated_investments','commission'].forEach(function (key) { if (data[key] !== undefined) data[key] = normalizeNumber(data[key]); });
   data.updated_at = nowIso();
+  if (data.public_status !== undefined && data.public_status !== before.public_status && data.public_status !== 'published') syncPublicPhotoAccess(id, false);
   var after = updateRecord('VEHICLES', 'vehicle_id', id, data);
-  if (data.public_status !== undefined && data.public_status !== before.public_status) syncPublicPhotoAccess(id, data.public_status === 'published');
+  if (data.public_status === 'published' && data.public_status !== before.public_status) syncPublicPhotoAccess(id, true);
   auditChanges(session, 'VEHICLE', id, 'UPDATE', before, after);
   return after;
 }

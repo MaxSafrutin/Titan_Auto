@@ -41,6 +41,8 @@ function routeAction(action, payload, token) {
     'sale.update': function () { return saleUpdate(payload.sale_id, payload.data, session); },
     'file.list': function () { return fileList(payload); },
     'file.upload': function () { return fileUpload(payload, session); },
+    'file.publicSet': function () { return filePublicSet(payload.file_id, payload, session); },
+    'file.reconcilePhotoAccess': function () { return reconcilePhotoAccess(session); },
     'file.delete': function () { return fileDelete(payload.file_id, session); },
     'file.getDownload': function () { return fileGetDownload(payload.file_id); },
     'task.list': function () { return taskList(payload); },
