@@ -283,7 +283,13 @@ async function saveDocumentRecord(store,value){
 
 function fileList(items = []) {
   if (!items.length) return '<div class="empty">Файлов пока нет</div>';
-  return `<div class="timeline">${items.map(x => `<div class="timeline-item"><b>${h(x.filename)}</b><div class="muted">${h(x.type)} · версия ${h(x.version)}</div><button class="btn ghost" data-download="${h(x.file_id)}">Скачать</button></div>`).join('')}</div>`;
+  return `<div class="timeline">${items.map(x => `<div class="timeline-item"><b>${h(x.filename)}</b><div class="muted">${h(x.type)} · версия ${h(x.version)}${x.type==='photos'?` · ${x.public_photo?'отмечено для каталога':'внутреннее фото'}`:''}</div><button class="btn ghost" data-download="${h(x.file_id)}">Скачать</button></div>`).join('')}</div>`;
+}
+
+function photoRegistry(photos, vehicle) {
+  if (!photos.length) return '<div class="card empty">Фотографий пока нет. Загрузите их с компьютера или сохраните кадр в редакторе ниже.</div>';
+  const published=vehicle.public_status==='published';
+  return `<div class="card photo-registry"><div class="photo-registry-head"><div><h2>Фотографии автомобиля</h2><p class="muted">${photos.length} на Google Drive · ${photos.filter(file=>file.public_photo).length} отмечено для каталога</p></div><span class="badge ${published?'success':''}">${published?'Авто опубликовано':'Авто не опубликовано'}</span></div><div class="notice">В каталог попадают только отмеченные фото формата JPG, PNG или WebP, и только пока опубликован автомобиль. Остальные файлы остаются внутренними.</div><div class="photo-rows">${photos.map(file=>`<div class="photo-row"><div><b>${h(file.filename)}</b><div class="muted">${file.public_photo?'<span class="badge success">Для каталога</span>':'<span class="badge">Внутреннее</span>'}${String(vehicle.cover_file_id)===String(file.drive_file_id)&&file.public_photo?' <span class="badge">Обложка</span>':''} · ${h(file.mime_type||'файл')}</div></div><div class="actions"><button class="btn" data-photo-preview="${h(file.file_id)}">Просмотр</button><button class="btn" data-download="${h(file.file_id)}">Скачать</button><button class="btn ${file.public_photo?'':'primary'}" data-photo-public="${h(file.file_id)}" data-photo-state="${file.public_photo?'private':'public'}">${file.public_photo?'Убрать из каталога':'В каталог'}</button>${file.public_photo&&String(vehicle.cover_file_id)!==String(file.drive_file_id)?`<button class="btn" data-photo-cover="${h(file.file_id)}">Сделать обложкой</button>`:''}</div></div>`).join('')}</div></div>`;
 }
 
 async function catalogView() {
@@ -347,7 +353,7 @@ async function photosView(vehicleId = '') {
   if(vehicleId){
     const [data,files]=await Promise.all([TitanAPI.vehicles.get(vehicleId),TitanAPI.files.list(vehicleId)]),vehicle=data.vehicle,title=[vehicle.brand,vehicle.model,vehicle.year].filter(Boolean).join(' '),photos=(files||[]).filter(file=>file.type==='photos');
     AppState.set('currentVehicle',vehicle);
-    const body=`<div class="story-context card"><div><span class="badge ${vehicle.status==='in_stock'?'success':''}">${h(vehicle.status||'new')}</span><b>${h(title)}</b><span class="muted">${h(vehicle.vehicle_id)} · фото на Drive: ${photos.length}</span></div><div class="actions"><a class="btn" href="#/vehicles/${h(vehicle.vehicle_id)}">Карточка авто</a><button class="btn primary" data-action="upload-file" data-default-type="photos">Загрузить фотографии</button>${photos.length?'<button class="btn" data-action="show-photo-files">Файлы на Drive</button>':''}</div></div><div class="photo-files" hidden>${fileList(photos)}</div><div class="tool-frame-wrap photos-frame-wrap"><iframe class="tool-frame photos-frame" title="Редактор фотографий" src="src/modules/photos/legacy/index.html?embedded=1"></iframe></div>`;
+    const body=`<div class="story-context card"><div><span class="badge ${vehicle.status==='in_stock'?'success':''}">${h(vehicle.status||'new')}</span><b>${h(title)}</b><span class="muted">${h(vehicle.vehicle_id)} · фото на Drive: ${photos.length}</span></div><div class="actions"><a class="btn" href="#/vehicles/${h(vehicle.vehicle_id)}">Карточка авто</a><button class="btn primary" data-action="upload-file" data-default-type="photos">Загрузить фотографии</button></div></div>${photoRegistry(photos,vehicle)}<div class="tool-frame-wrap photos-frame-wrap"><iframe class="tool-frame photos-frame" title="Редактор фотографий" src="src/modules/photos/legacy/index.html?embedded=1"></iframe></div>`;
     root.innerHTML=shell(page('Редактор фотографий',`${vehicle.vehicle_id} · подготовка единого кадра для площадок`,body,'<a class="btn" href="#/photos">← Все автомобили</a>'));
     const frame=document.querySelector('.photos-frame');frame.addEventListener('load',()=>frame.contentWindow.postMessage({type:'TITAN_PHOTOS_LOAD',vehicle},location.origin),{once:true});return;
   }
@@ -497,7 +503,7 @@ function contactForm() { showModal('Новый контакт', `<form class="fo
 function valuationForm() { showModal('Новая оценка', `<form class="form-grid" data-form="valuation"><div class="field"><label>Рыночная цена</label><input name="market_price" type="number"></div><div class="field"><label>Рекомендуемая цена</label><input name="recommended_price" type="number"></div><div class="field"><label>Цена выкупа</label><input name="buyout_price" type="number"></div><div class="field"><label>Вложения</label><input name="estimated_investments" type="number"></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="wide actions"><button class="btn primary">Сохранить оценку</button></div></form>`); }
 function taskForm(context = {}) { showModal('Новая задача', `<form class="form-grid" data-form="task"><div class="field wide"><label>Задача *</label><input name="title" required autofocus></div><div class="field"><label>Срок</label><input name="due_at" type="datetime-local"></div><div class="field"><label>Исполнитель</label><input name="assignee" value="${h(currentUser().name)}"></div><div class="field"><label>Приоритет</label><select name="priority"><option value="normal">Обычный</option><option value="high">Высокий</option><option value="urgent">Срочный</option><option value="low">Низкий</option></select></div><div class="field"><label>Автомобиль</label><input name="vehicle_id" value="${h(context.vehicle_id)}" placeholder="TA-000001"></div><div class="field"><label>Лид</label><input name="lead_id" value="${h(context.lead_id)}" placeholder="LEAD-000001"></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="wide actions"><button class="btn primary">Создать задачу</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`); }
 function uploadForm(defaultType = 'documents') {
-  showModal('Загрузить файлы', `<form class="form-grid" data-form="file"><div class="field"><label>Папка автомобиля на Google Drive</label><select name="type"><option value="photos"${selected(defaultType,'photos')}>Фото</option><option value="documents"${selected(defaultType,'documents')}>Документы</option><option value="price-tags"${selected(defaultType,'price-tags')}>Ценники</option><option value="stories"${selected(defaultType,'stories')}>Сторис</option><option value="reports"${selected(defaultType,'reports')}>Отчёты</option></select></div><div class="field"><label>Отдельные файлы</label><input name="file" type="file" multiple></div><div class="field wide"><label>Или целая папка с компьютера</label><input name="folder" type="file" webkitdirectory multiple></div><div class="field wide"><label>Общее описание</label><input name="description" placeholder="Например: фото с объявления или документы осмотра"></div><div class="wide notice">Файлы будут скопированы в папку выбранного автомобиля. Первая загруженная фотография станет обложкой; у опубликованного автомобиля фотографии получат доступ по ссылке.</div><div class="wide upload-progress" data-upload-progress hidden><b>Подготовка загрузки…</b><progress max="1" value="0"></progress></div><div class="wide actions"><button class="btn primary">Загрузить на Google Drive</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
+  showModal('Загрузить файлы', `<form class="form-grid" data-form="file"><div class="field"><label>Папка автомобиля на Google Drive</label><select name="type"><option value="photos"${selected(defaultType,'photos')}>Фото</option><option value="documents"${selected(defaultType,'documents')}>Документы</option><option value="price-tags"${selected(defaultType,'price-tags')}>Ценники</option><option value="stories"${selected(defaultType,'stories')}>Сторис</option><option value="reports"${selected(defaultType,'reports')}>Отчёты</option></select></div><div class="field"><label>Отдельные файлы</label><input name="file" type="file" multiple></div><div class="field wide"><label>Или целая папка с компьютера</label><input name="folder" type="file" webkitdirectory multiple></div><div class="field wide"><label>Общее описание</label><input name="description" placeholder="Например: фото с объявления или документы осмотра"></div><div class="field wide" data-public-photo-option ${defaultType==='photos'?'':'hidden'}><label class="checkbox-label"><input name="public_photo" type="checkbox"> Отметить эти фото для публичного каталога</label><small class="muted">Только JPG, PNG и WebP. Если автомобиль ещё не опубликован, фото появятся на сайте после публикации.</small></div><div class="wide notice">Файлы копируются в папку автомобиля на Google Drive. По умолчанию фото остаются внутренними; доступ для публичного каталога включается только явно.</div><div class="wide upload-progress" data-upload-progress hidden><b>Подготовка загрузки…</b><progress max="1" value="0"></progress></div><div class="wide actions"><button class="btn primary">Загрузить на Google Drive</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
 }
 
 function saleForm(vehicle = {}, vehicles = []) {
@@ -560,6 +566,27 @@ async function render() {
 }
 
 document.addEventListener('click', async (event) => {
+  const previewId=event.target.closest('[data-photo-preview]')?.dataset.photoPreview;
+  if(previewId){
+    try {
+      const file=await TitanAPI.files.getDownload(previewId);
+      if(!['image/jpeg','image/png','image/webp'].includes(file.mime_type)) throw new Error('Предпросмотр доступен для JPG, PNG и WebP. Другой формат скачайте.');
+      showModal(file.filename,`<div class="photo-preview"><img src="${h(file.data_url)}" alt="${h(file.filename)}"><div class="actions"><button class="btn" data-download="${h(previewId)}">Скачать</button></div></div>`);
+    } catch(error) { toast(errorMessage(error),'error'); }
+    return;
+  }
+  const photoPublic=event.target.closest('[data-photo-public]');
+  const photoCover=event.target.closest('[data-photo-cover]');
+  if(photoPublic||photoCover){
+    const button=photoPublic||photoCover;button.disabled=true;
+    try {
+      const isPublic=photoCover||photoPublic.dataset.photoState==='public';
+      await TitanAPI.files.publicSet(photoCover?.dataset.photoCover||photoPublic?.dataset.photoPublic,Boolean(isPublic),Boolean(photoCover));
+      toast(photoCover?'Обложка обновлена':isPublic?'Фото отмечено для каталога':'Фото убрано из каталога');
+      return render();
+    } catch(error) { toast(errorMessage(error),'error');button.disabled=false; }
+    return;
+  }
   const completedTaskId=event.target.closest('[data-task-done]')?.dataset.taskDone;
   if(completedTaskId){try{await TitanAPI.tasks.update(completedTaskId,{status:'done'});toast('Задача выполнена');return render();}catch(error){return toast(errorMessage(error),'error');}}
   const uploadVehicleId=event.target.closest('[data-upload-vehicle]')?.dataset.uploadVehicle;
@@ -600,7 +627,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'open-valuation') { const vehicle=AppState.get('currentVehicle'); if(vehicle) navigate(`valuation/${vehicle.vehicle_id}`); return render(); }
   if (action === 'open-calls') { const lead=AppState.get('currentLead'); if(lead) navigate(`calls/${lead.lead_id}`); return render(); }
   if (action === 'upload-for') {
-    try { const data=await TitanAPI.vehicles.get(event.target.closest('[data-vehicle-id]').dataset.vehicleId); AppState.set('currentVehicle',data.vehicle); uploadForm(); const type=event.target.closest('[data-file-type]')?.dataset.fileType; if(type) document.querySelector('[data-form="file"] select[name="type"]').value=type; return; }
+    try { const data=await TitanAPI.vehicles.get(event.target.closest('[data-vehicle-id]').dataset.vehicleId); AppState.set('currentVehicle',data.vehicle); const type=event.target.closest('[data-file-type]')?.dataset.fileType||'documents'; uploadForm(type); return; }
     catch(e) { return toast(errorMessage(e),'error'); }
   }
   if (action === 'copy-story') {
@@ -608,7 +635,6 @@ document.addEventListener('click', async (event) => {
     try { await navigator.clipboard.writeText(text); return toast('Текст скопирован'); } catch { return toast('Не удалось скопировать текст','error'); }
   }
   if (action === 'show-story-files') { const panel=document.querySelector('.story-files'); if(panel) panel.hidden=!panel.hidden; return; }
-  if (action === 'show-photo-files') { const panel=document.querySelector('.photo-files'); if(panel) panel.hidden=!panel.hidden; return; }
   if (action === 'upload-file') return uploadForm(event.target.closest('[data-action]')?.dataset.defaultType || 'documents');
   if (action === 'new-sale') {
     try { const vehicles = (await TitanAPI.vehicles.list({ include_archived: true })).filter(v => !['sold','archived'].includes(v.status)); return saleForm(vehicles[0] || {}, vehicles); }
@@ -635,6 +661,14 @@ document.addEventListener('click', async (event) => {
     const v = AppState.get('currentVehicle');
     if (!v) return;
     return saleForm(v, [v]);
+  }
+});
+
+document.addEventListener('change', event => {
+  if(event.target.matches('[data-form="file"] select[name="type"]')){
+    const form=event.target.form,photos=event.target.value==='photos';
+    form.querySelector('[data-public-photo-option]').hidden=!photos;
+    if(!photos)form.elements.public_photo.checked=false;
   }
 });
 
@@ -691,13 +725,18 @@ document.addEventListener('submit', async (event) => {
       if(form.elements.type.value==='photos'){
         const nonImage=files.find(file=>!String(file.type).startsWith('image/')&&!/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name));
         if(nonImage)throw new Error(`Файл ${nonImage.name} не является фотографией. Документы загрузите в раздел «Документы».`);
+        if(form.elements.public_photo.checked){
+          const unsupported=files.find(file=>!/\.(jpe?g|png|webp)$/i.test(file.name)||Boolean(file.type)&&!['image/jpeg','image/png','image/webp'].includes(file.type));
+          if(unsupported)throw new Error(`Файл ${unsupported.name} нельзя опубликовать. Выберите JPG, PNG или WebP либо снимите отметку публикации.`);
+        }
       }
       const oversized=files.find(file=>file.size>8*1024*1024);if(oversized)throw new Error(`Файл ${oversized.name} больше 8 МБ.`);
       const progress=form.querySelector('[data-upload-progress]'),bar=progress.querySelector('progress'),label=progress.querySelector('b');progress.hidden=false;bar.max=files.length;
       for(let index=0;index<files.length;index+=1){
         const file=files[index],sourceName=file.webkitRelativePath||file.name,uploadedName=file.webkitRelativePath?file.webkitRelativePath.replace(/[\\/]+/g,' — '):file.name;label.textContent=`${index+1} из ${files.length}: ${sourceName}`;bar.value=index;
         const data_url=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error(`Не удалось прочитать ${file.name}`));reader.readAsDataURL(file)});
-        await TitanAPI.files.upload({vehicle_id:vehicle.vehicle_id,type:form.elements.type.value,description:[form.elements.description.value,file.webkitRelativePath?`Источник: ${file.webkitRelativePath}`:''].filter(Boolean).join(' · '),filename:uploadedName,mime_type:file.type||'application/octet-stream',data_url});bar.value=index+1;
+        const inferredMime=/\.jpe?g$/i.test(file.name)?'image/jpeg':/\.png$/i.test(file.name)?'image/png':/\.webp$/i.test(file.name)?'image/webp':'application/octet-stream';
+        await TitanAPI.files.upload({vehicle_id:vehicle.vehicle_id,type:form.elements.type.value,description:[form.elements.description.value,file.webkitRelativePath?`Источник: ${file.webkitRelativePath}`:''].filter(Boolean).join(' · '),filename:uploadedName,mime_type:file.type||inferredMime,public_photo:form.elements.type.value==='photos'&&form.elements.public_photo.checked,data_url});bar.value=index+1;
       }
       closeModal();toast(`Загружено файлов: ${files.length}`);return render();
     }

@@ -30,7 +30,7 @@
 - Contacts: `contact.list`, `contact.create`.
 - Valuations: `valuation.list`, `valuation.create`.
 - Sales: `sale.list`, `sale.create`, `sale.update`. Изменение продажи и расчётов выплат требует действующую сессию и записывается в аудит.
-- Files: `file.list`, `file.upload`, `file.delete`, `file.getDownload`.
+- Files: `file.list`, `file.upload`, `file.publicSet`, `file.getDownload`, `file.delete`. `file.upload` принимает `public_photo: true` только для JPG, PNG, WebP в папке `photos`; по умолчанию фото внутреннее. `file.publicSet` принимает `file_id`, `public_photo` и необязательное `set_cover`. `file.reconcilePhotoAccess` — административная разовая сверка доступа к ранее загруженным фото.
 - Tasks: `task.list`, `task.create`, `task.update`.
 - Dashboard: `dashboard.stats`.
 - Settings: `settings.get`, `settings.update` — только с действующей сессией.

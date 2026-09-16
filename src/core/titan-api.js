@@ -52,7 +52,7 @@ async function request(action, payload = {}) {
   const attempts = cacheable ? 2 : 1;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      const envelope = await fetchEnvelope(action, payload, Config.requestTimeoutMs);
+      const envelope = await fetchEnvelope(action, payload, action === 'file.upload' ? 90000 : Config.requestTimeoutMs);
       if (!envelope.ok) throw new TitanApiError(envelope.error?.code, envelope.error?.message);
       if (cacheable) responseCache.set(cacheKey, { time: Date.now(), value: envelope.data });
       return envelope.data;
@@ -142,6 +142,7 @@ export const TitanAPI = Object.freeze({
   files: {
     list: (vehicleId) => request('file.list', { vehicle_id: vehicleId }),
     upload: (data) => request('file.upload', data),
+    publicSet: (fileId, publicPhoto, setCover = false) => request('file.publicSet', { file_id: fileId, public_photo: publicPhoto, set_cover: setCover }),
     remove: (fileId) => request('file.delete', { file_id: fileId }),
     download: (fileId) => request('file.getDownload', { file_id: fileId }),
     getDownload: (fileId) => request('file.getDownload', { file_id: fileId }),

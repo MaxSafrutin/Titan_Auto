@@ -153,6 +153,17 @@ textarea { resize: vertical; min-height: 96px; }
 .story-context > div:first-child { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .story-files { margin-bottom: 14px; }
 .photo-files { margin-bottom: 14px; }
+.photo-registry { margin-bottom: 14px; }
+.photo-registry-head, .photo-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.photo-registry-head h2 { margin: 0; }
+.photo-rows { display: grid; margin-top: 18px; }
+.photo-row { padding: 14px 0; border-top: 1px solid var(--border); }
+.photo-row > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.photo-row .actions { flex-wrap: wrap; justify-content: flex-end; }
+.photo-preview img { display: block; max-width: 100%; max-height: 70vh; margin: 0 auto 16px; object-fit: contain; }
+.checkbox-label { display: flex; align-items: center; gap: 10px; }
+.checkbox-label input { width: auto; }
+@media (max-width: 780px) { .photo-registry-head, .photo-row { align-items: flex-start; flex-direction: column; } .photo-row .actions { justify-content: flex-start; } }
 .stories-frame-wrap { background: #0a0a0a; }
 .stories-frame { height: calc(100vh - 225px); min-height: 820px; background: #0a0a0a; }
 .photos-frame-wrap { background: #0b0b0c; }
