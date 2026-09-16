@@ -402,22 +402,80 @@ function newEntryModal(kind = 'lead') {
   showModal('Новая запись', `<div class="actions"><button class="btn ${kind==='lead'?'primary':''}" data-action="new-lead">Лид</button><button class="btn ${kind==='vehicle'?'primary':''}" data-action="new-vehicle">Автомобиль</button></div><p class="muted">Лид можно создать по трём полям, остальное добавить позже.</p>`);
 }
 
+const selected = (value, expected) => String(value ?? '') === String(expected) ? ' selected' : '';
+const dateValue = value => h(String(value || '').slice(0, 10));
+const dateTimeValue = value => h(String(value || '').slice(0, 16));
+
 function vehicleForm(vehicle = {}) {
   closeModal(); showModal(vehicle.vehicle_id ? `Изменить ${vehicle.vehicle_id}` : 'Новый автомобиль', `<form class="form-grid" data-form="vehicle" data-id="${h(vehicle.vehicle_id||'')}">
-    <div class="field"><label>Марка *</label><input name="brand" value="${h(vehicle.brand)}" required></div><div class="field"><label>Модель *</label><input name="model" value="${h(vehicle.model)}" required></div>
-    <div class="field"><label>Год</label><input name="year" type="number" min="1900" max="2100" value="${h(vehicle.year)}"></div><div class="field"><label>Пробег, км</label><input name="mileage" type="number" min="0" value="${h(vehicle.mileage)}"></div>
-    <div class="field"><label>VIN</label><input name="vin" value="${h(vehicle.vin)}"></div><div class="field"><label>Коробка</label><input name="transmission" value="${h(vehicle.transmission)}"></div>
-    <div class="field"><label>Телефон продавца</label><input name="seller_phone" value="${h(vehicle.seller_phone)}"></div><div class="field"><label>Имя продавца</label><input name="seller_name" value="${h(vehicle.seller_name)}"></div>
-    <div class="field"><label>Цена продавца</label><input name="seller_price" type="number" min="0" value="${h(vehicle.seller_price)}"></div><div class="field"><label>Цена продажи</label><input name="sale_price" type="number" min="0" value="${h(vehicle.sale_price)}"></div>
-    <div class="field"><label>Статус</label><select name="status"><option value="new">Новый</option><option value="in_work">В работе</option><option value="in_stock">В наличии</option><option value="reserved">Резерв</option><option value="sold">Продан</option></select></div><div class="field"><label>Публикация</label><select name="public_status"><option value="private">Скрыт</option><option value="published">Опубликован</option></select></div>
-    <div class="field wide"><label>Заметки</label><textarea name="notes">${h(vehicle.notes)}</textarea></div><div class="wide actions"><button class="btn primary">Сохранить</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
-  const f = document.querySelector('[data-form="vehicle"]');
-  f.status.value = vehicle.status || 'new'; f.public_status.value = vehicle.public_status || 'private';
+    <fieldset class="form-section wide"><legend>Карточка автомобиля</legend>
+      <div class="field"><label>Марка *</label><input name="brand" value="${h(vehicle.brand)}" required></div><div class="field"><label>Модель *</label><input name="model" value="${h(vehicle.model)}" required></div>
+      <div class="field"><label>Поколение</label><input name="generation" value="${h(vehicle.generation)}"></div><div class="field"><label>Год</label><input name="year" type="number" min="1900" max="2100" value="${h(vehicle.year)}"></div>
+      <div class="field"><label>Статус</label><select name="status"><option value="new"${selected(vehicle.status||'new','new')}>Новый</option><option value="in_work"${selected(vehicle.status,'in_work')}>В работе</option><option value="in_stock"${selected(vehicle.status,'in_stock')}>В наличии</option><option value="reserved"${selected(vehicle.status,'reserved')}>Резерв</option><option value="sold"${selected(vehicle.status,'sold')}>Продан</option><option value="archived"${selected(vehicle.status,'archived')}>Архив</option></select></div>
+      <div class="field"><label>Публикация</label><select name="public_status"><option value="private"${selected(vehicle.public_status||'private','private')}>Скрыт</option><option value="published"${selected(vehicle.public_status,'published')}>Опубликован</option></select></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Технические характеристики</legend>
+      <div class="field"><label>VIN</label><input name="vin" value="${h(vehicle.vin)}"></div><div class="field"><label>Пробег, км</label><input name="mileage" type="number" min="0" value="${h(vehicle.mileage)}"></div>
+      <div class="field"><label>Объём двигателя, л</label><input name="engine_volume" type="number" min="0" step="0.1" value="${h(vehicle.engine_volume)}"></div><div class="field"><label>Мощность, л.с.</label><input name="engine_power" type="number" min="0" value="${h(vehicle.engine_power)}"></div>
+      <div class="field"><label>Топливо</label><input name="fuel_type" value="${h(vehicle.fuel_type)}"></div><div class="field"><label>Коробка</label><input name="transmission" value="${h(vehicle.transmission)}"></div>
+      <div class="field"><label>Привод</label><input name="drive_type" value="${h(vehicle.drive_type)}"></div><div class="field"><label>Кузов</label><input name="body_type" value="${h(vehicle.body_type)}"></div>
+      <div class="field"><label>Цвет</label><input name="color" value="${h(vehicle.color)}"></div><div class="field"><label>Количество владельцев</label><input name="owners_count" type="number" min="0" value="${h(vehicle.owners_count)}"></div>
+      <div class="field"><label>Госномер</label><input name="registration_plate" value="${h(vehicle.registration_plate)}"></div><div class="field"><label>Место нахождения</label><input name="location" value="${h(vehicle.location)}"></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Документы и номера агрегатов</legend>
+      <div class="field"><label>Категория ТС</label><input name="category" value="${h(vehicle.category)}"></div><div class="field"><label>Тип ТС</label><input name="vehicle_type" value="${h(vehicle.vehicle_type)}"></div>
+      <div class="field"><label>Номер двигателя</label><input name="engine_number" value="${h(vehicle.engine_number)}"></div><div class="field"><label>Шасси / рама</label><input name="chassis_number" value="${h(vehicle.chassis_number)}"></div>
+      <div class="field"><label>Номер кузова</label><input name="body_number" value="${h(vehicle.body_number)}"></div><div class="field"><label>ПТС / ЭПТС</label><input name="pts_number" value="${h(vehicle.pts_number)}"></div>
+      <div class="field"><label>ПТС выдан</label><input name="pts_issued" type="date" value="${dateValue(vehicle.pts_issued)}"></div><div class="field"><label>СТС</label><input name="sts_number" value="${h(vehicle.sts_number)}"></div>
+      <div class="field"><label>СТС выдан</label><input name="sts_issued" type="date" value="${dateValue(vehicle.sts_issued)}"></div><div class="field wide"><label>Особые отметки</label><textarea name="special_notes">${h(vehicle.special_notes)}</textarea></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Источник и ответственные</legend>
+      <div class="field"><label>Имя продавца</label><input name="seller_name" value="${h(vehicle.seller_name)}"></div><div class="field"><label>Телефон продавца</label><input name="seller_phone" type="tel" value="${h(vehicle.seller_phone)}"></div>
+      <div class="field"><label>ID владельца / контрагента</label><input name="owner_id" value="${h(vehicle.owner_id)}"></div><div class="field"><label>Источник</label><input name="source" value="${h(vehicle.source)}"></div>
+      <div class="field wide"><label>Ссылка на источник</label><input name="source_url" type="url" value="${h(vehicle.source_url)}"></div>
+      <div class="field"><label>Тип поступления</label><select name="acquisition_type"><option value=""${selected(vehicle.acquisition_type,'')}>Не указан</option><option value="commission"${selected(vehicle.acquisition_type,'commission')}>Комиссия</option><option value="purchase"${selected(vehicle.acquisition_type,'purchase')}>Выкуп</option><option value="trade_in"${selected(vehicle.acquisition_type,'trade_in')}>Trade-in</option><option value="virtual"${selected(vehicle.acquisition_type,'virtual')}>Виртуальный склад</option><option value="other"${selected(vehicle.acquisition_type,'other')}>Другое</option></select></div>
+      <div class="field"><label>Менеджер</label><input name="manager" value="${h(vehicle.manager)}"></div><div class="field"><label>Ответственный менеджер</label><input name="responsible_manager" value="${h(vehicle.responsible_manager)}"></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Цены и экономика</legend>
+      <div class="field"><label>Цена продавца</label><input name="seller_price" type="number" min="0" value="${h(vehicle.seller_price)}"></div><div class="field"><label>Рыночная цена</label><input name="market_price" type="number" min="0" value="${h(vehicle.market_price)}"></div>
+      <div class="field"><label>Цена выкупа</label><input name="buyout_price" type="number" min="0" value="${h(vehicle.buyout_price)}"></div><div class="field"><label>Цена закупки</label><input name="purchase_price" type="number" min="0" value="${h(vehicle.purchase_price)}"></div>
+      <div class="field"><label>Цена продажи</label><input name="sale_price" type="number" min="0" value="${h(vehicle.sale_price)}"></div><div class="field"><label>Плановые вложения</label><input name="estimated_investments" type="number" min="0" value="${h(vehicle.estimated_investments)}"></div>
+      <div class="field"><label>Комиссия салона</label><input name="commission" type="number" min="0" value="${h(vehicle.commission)}"></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Описание</legend>
+      <div class="field wide"><label>Публичное описание</label><textarea name="description">${h(vehicle.description)}</textarea></div><div class="field wide"><label>Внутренние заметки</label><textarea name="notes">${h(vehicle.notes)}</textarea></div>
+    </fieldset>
+    <div class="wide actions sticky-actions"><button class="btn primary">Сохранить</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
 }
 
 function leadForm(lead = {}) {
-  closeModal(); showModal(lead.lead_id ? `Изменить ${lead.lead_id}` : 'Новый лид', `<form class="form-grid" data-form="lead" data-id="${h(lead.lead_id || '')}"><div class="field"><label>Марка *</label><input name="brand" value="${h(lead.brand)}" required></div><div class="field"><label>Модель *</label><input name="model" value="${h(lead.model)}" required></div><div class="field"><label>Телефон *</label><input name="phone" type="tel" value="${h(lead.phone)}" required></div><div class="field"><label>Год</label><input name="year" type="number" value="${h(lead.year)}"></div><div class="field wide"><label>Ссылка на объявление</label><input name="source_url" type="url" value="${h(lead.source_url)}"></div><div class="field"><label>Имя продавца</label><input name="seller_name" value="${h(lead.seller_name)}"></div><div class="field"><label>Цена продавца</label><input name="seller_price" type="number" value="${h(lead.seller_price)}"></div><div class="field"><label>Следующий контакт</label><input name="next_contact_at" type="datetime-local" value="${h(String(lead.next_contact_at || '').slice(0, 16))}"></div><div class="field"><label>Статус</label><select name="status"><option value="new">Новый</option><option value="in_work">В работе</option><option value="qualified">Квалифицирован</option><option value="closed">Закрыт</option></select></div><div class="field wide"><label>Заметки</label><textarea name="notes">${h(lead.notes)}</textarea></div><div class="wide actions"><button class="btn primary">${lead.lead_id ? 'Сохранить' : 'Создать лид'}</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
-  document.querySelector('[data-form="lead"]').status.value = lead.status || 'new';
+  closeModal(); showModal(lead.lead_id ? `Изменить ${lead.lead_id}` : 'Новый лид', `<form class="form-grid" data-form="lead" data-id="${h(lead.lead_id || '')}">
+    <fieldset class="form-section wide"><legend>Клиент и автомобиль</legend>
+      <div class="field"><label>Имя продавца</label><input name="seller_name" value="${h(lead.seller_name)}"></div><div class="field"><label>Телефон *</label><input name="phone" type="tel" value="${h(lead.phone)}" required></div>
+      <div class="field"><label>Марка *</label><input name="brand" value="${h(lead.brand)}" required></div><div class="field"><label>Модель *</label><input name="model" value="${h(lead.model)}" required></div>
+      <div class="field"><label>Год</label><input name="year" type="number" min="1900" max="2100" value="${h(lead.year)}"></div><div class="field"><label>Цена продавца</label><input name="seller_price" type="number" min="0" value="${h(lead.seller_price)}"></div>
+      <div class="field"><label>Связанный автомобиль</label><input name="vehicle_id" value="${h(lead.vehicle_id)}" placeholder="TA-000001"></div><div class="field"><label>Статус</label><select name="status"><option value="new"${selected(lead.status||'new','new')}>Новый</option><option value="in_work"${selected(lead.status,'in_work')}>В работе</option><option value="qualified"${selected(lead.status,'qualified')}>Квалифицирован</option><option value="won"${selected(lead.status,'won')}>Успешно</option><option value="lost"${selected(lead.status,'lost')}>Отказ</option><option value="closed"${selected(lead.status,'closed')}>Закрыт</option><option value="archived"${selected(lead.status,'archived')}>Архив</option></select></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Источник объявления</legend>
+      <div class="field"><label>Источник</label><input name="source" value="${h(lead.source)}"></div><div class="field"><label>Канал лида</label><input name="lead_channel" value="${h(lead.lead_channel)}"></div>
+      <div class="field wide"><label>Ссылка на объявление</label><input name="source_url" type="url" value="${h(lead.source_url)}"></div>
+      <div class="field"><label>Дата публикации</label><input name="listing_date" type="date" value="${dateValue(lead.listing_date)}"></div><div class="field"><label>Возраст объявления, дней</label><input name="listing_age" type="number" min="0" value="${h(lead.listing_age)}"></div>
+      <div class="field"><label>Позиция относительно рынка</label><input name="market_position" value="${h(lead.market_position)}"></div><div class="field"><label>Ограничения объявления</label><input name="listing_restriction" value="${h(lead.listing_restriction)}"></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Подготовка и история контакта</legend>
+      <div class="field"><label>Последовательность звонка</label><input name="call_sequence" value="${h(lead.call_sequence)}"></div><div class="field"><label>Предыдущий контакт</label><input name="previous_contact" value="${h(lead.previous_contact)}"></div>
+      <div class="field"><label>Предыдущий результат</label><input name="previous_outcome" value="${h(lead.previous_outcome)}"></div><div class="field"><label>Предыдущая договорённость</label><input name="previous_agreement" value="${h(lead.previous_agreement)}"></div>
+      <div class="field"><label>Предыдущее возражение</label><input name="previous_objection" value="${h(lead.previous_objection)}"></div><div class="field"><label>Акцент перед звонком</label><input name="pre_call_accent" value="${h(lead.pre_call_accent)}"></div>
+      <div class="field wide"><label>Предыдущие заметки</label><textarea name="previous_notes">${h(lead.previous_notes)}</textarea></div>
+    </fieldset>
+    <fieldset class="form-section wide"><legend>Квалификация и договорённости</legend>
+      <div class="field"><label>Потребность</label><input name="need" value="${h(lead.need)}"></div><div class="field"><label>Возражение</label><input name="objection" value="${h(lead.objection)}"></div>
+      <div class="field"><label>Готовность</label><input name="readiness" value="${h(lead.readiness)}"></div><div class="field"><label>Менеджер</label><input name="manager" value="${h(lead.manager)}"></div>
+      <div class="field"><label>Встреча</label><input name="meet_at" type="datetime-local" value="${dateTimeValue(lead.meet_at)}"></div><div class="field"><label>Место встречи</label><input name="meeting_place" value="${h(lead.meeting_place)}"></div>
+      <div class="field"><label>Следующий контакт</label><input name="next_contact_at" type="datetime-local" value="${dateTimeValue(lead.next_contact_at)}"></div><div class="field"><label>Тип следующего контакта</label><input name="next_contact_type" value="${h(lead.next_contact_type)}"></div>
+      <div class="field wide"><label>Текст после звонка</label><textarea name="post_call_text">${h(lead.post_call_text)}</textarea></div><div class="field wide"><label>Заметки</label><textarea name="notes">${h(lead.notes)}</textarea></div>
+    </fieldset>
+    <div class="wide actions sticky-actions"><button class="btn primary">${lead.lead_id ? 'Сохранить' : 'Создать лид'}</button><button type="button" class="btn" data-action="close-modal">Отмена</button></div></form>`);
 }
 
 function contactForm() { showModal('Новый контакт', `<form class="form-grid" data-form="contact"><div class="field"><label>Тип</label><select name="type"><option>Звонок</option><option>Сообщение</option><option>Встреча</option><option>Осмотр</option></select></div><div class="field"><label>Результат *</label><input name="result" required></div><div class="field wide"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="field"><label>Следующее действие</label><input name="next_action"></div><div class="field"><label>Когда</label><input name="next_action_at" type="datetime-local"></div><div class="wide actions"><button class="btn primary">Сохранить контакт</button></div></form>`); }
